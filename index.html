@@ -3,6 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>PointSystem v4.5.2</title>
+    <script>
+        // Apply this device's saved light/dark choice immediately, before the page is drawn.
+        (function () {
+            try {
+                if (localStorage.getItem('ps_theme') === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    var s = document.createElement('style');
+                    s.textContent = 'html.dark body{background-color:#1c1917 !important}html.dark{background-color:#1c1917}';
+                    document.head.appendChild(s);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -501,7 +514,7 @@
         // =====================================================================
         //  CLOUD DATABASE LAYER (Firebase Authentication + Cloud Firestore)
         //  Everything lives under  orgs/<ORG ID>/...   The only thing kept in localStorage is the organisation ID.
-        //    orgs/<ID>                -> fields: admins, lastResetDate, darkMode
+        //    orgs/<ID>                -> fields: admins, lastResetDate, masterPasscode
         //    orgs/<ID>/students/<key> -> one document per student
         //    orgs/<ID>/ledger/<code>  -> one document per coupon code
         // =====================================================================
@@ -515,7 +528,8 @@
             appId: "1:608392136336:web:8af00865da03931fd7ba15"
         };
         const ORG_EMAIL_DOMAIN = 'uft.pointsystem-org.com';   // org logins are stored as <orgid>@this-domain (must match what you create in Firebase Authentication)
-        const ORG_ID_KEY = 'ps_orgId', ORG_PASS_KEY = 'ps_orgPass';   // the ONLY localStorage keys used: saved org login
+        const ORG_ID_KEY = 'ps_orgId', ORG_PASS_KEY = 'ps_orgPass';   // localStorage keys used: saved org login
+        const THEME_KEY = 'ps_theme';                      // localStorage: this device's light/dark choice ('dark' or 'light')
         const MASTER_PASS_KEY = 'ps_masterPass';          // sessionStorage only: cleared the moment the tab/browser closes
         let orgMasterPasscode = '';                        // this organisation's Master Passcode, cached in memory for the session
         const secondaryPasscode = () => orgMasterPasscode.split('').reverse().join('');
@@ -642,7 +656,6 @@
             syncedLedger = lMap; ledgerCache = {};
             for (const c in lMap) { const r = parseJ(lMap[c], null); if (r) ledgerCache[c] = r; }
             lastResetDate = v.lastResetDate || 'Never';
-            isDarkMode = v.darkMode === true;
             orgMasterPasscode = (v.masterPasscode || '').toString();
             try { sessionStorage.setItem(MASTER_PASS_KEY, orgMasterPasscode); } catch (e) {}
             orgReady = true;
@@ -686,7 +699,7 @@
         function exportAllData() {
             if (!orgReady) return;
             const data = { app: 'PointSystem', format: 1, orgId, exportedAt: new Date().toISOString(),
-                students, admins, ledger: ledgerCache, lastResetDate, darkMode: isDarkMode };
+                students, admins, ledger: ledgerCache, lastResetDate };
             const p = n => String(n).padStart(2, '0'), d = new Date();
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
@@ -711,9 +724,9 @@
                 if (!confirm(`Replace ALL data of organisation ${orgId} with this backup${other}: ${d.students.length} students, ${d.admins.length} admins?`)) return;
                 students = d.students; admins = d.admins;
                 Coupons.saveLedger(d.ledger && typeof d.ledger === 'object' ? d.ledger : {});
-                lastResetDate = d.lastResetDate || 'Never'; isDarkMode = d.darkMode === true;
+                lastResetDate = d.lastResetDate || 'Never';
                 activeID = null;
-                saveAdmins(); dbSet('lastResetDate', lastResetDate); dbSet('darkMode', isDarkMode); save();
+                saveAdmins(); dbSet('lastResetDate', lastResetDate); save();
                 performAdminLogout();                       // signs out to the Rankings page
                 applyTheme(); updateLastReset();
                 alertAfterPaint(`Backup loaded: ${students.length} students, ${admins.length} admins. You have been signed out.`);
@@ -1486,7 +1499,7 @@
         }
 
         // --- THEME & INIT ---
-        let isDarkMode = false;
+        let isDarkMode = (function () { try { return localStorage.getItem(THEME_KEY) === 'dark'; } catch (e) { return false; } })();
         function applyTheme() {
             const body = document.getElementById('main-body');
             const sun = document.getElementById('theme-icon-sun');
@@ -1503,7 +1516,11 @@
             }
             if(chartInstance) updateChartTheme();
         }
-        function toggleTheme() { isDarkMode = !isDarkMode; applyTheme(); dbSet('darkMode', isDarkMode); }
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            try { localStorage.setItem(THEME_KEY, isDarkMode ? 'dark' : 'light'); } catch (e) {}
+            applyTheme();
+        }
 
         function updateLastReset() {
             const dateStr = lastResetDate || 'Never';
