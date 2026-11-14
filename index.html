@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PointSystem v4.5.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #b45309; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #78350f; }
+        
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        .bg-maroon { background-color: #7f1d1d; } 
+        
+        .rd-active { outline: 3px solid rgba(245, 158, 11, 0.9); outline-offset: -3px; background-color: rgba(245, 158, 11, 0.18); }
+        .nav-active { border-color: #f59e0b !important; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.4) !important; transform: scale(1.01); }
+    </style>
+</head>
+<body id="main-body" class="bg-orange-50 text-stone-900 dark:text-stone-100 min-h-screen font-sans transition-colors duration-300">
+
+
+    <nav class="bg-maroon text-white p-4 flex flex-col md:flex-row justify-between items-center shadow-2xl border-b-4 border-amber-500 gap-4">
+        <div class="flex items-center gap-4 w-full md:w-auto justify-between">
+			<div class="flex flex-col leading-tight">
+				<!-- or this line instead, <h1 class="text-2xl font-black tracking-tighter text-amber-400 drop-shadow-md">PointSystem <span class="text-white text-sm font-normal uppercase tracking-widest ml-1">v4.5.2</span></h1>-->
+    			<h1 class="text-2xl font-black tracking-tighter text-amber-400 drop-shadow-md">PointSystem <span class="text-white text-sm font-normal uppercase tracking-widest ml-1">v4.5.2</span></h1>
+    			<span class="text-[10px] text-orange-200 tracking-widest uppercase">by Himanshu Agrawal, SG-UFT Group</span>
+			</div>
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-red-800 transition flex items-center justify-center bg-black/30 border border-red-900 shadow-inner">
+                <span id="theme-icon-sun" class="hidden text-amber-300 text-lg">☀️</span>
+                <span id="theme-icon-moon" class="text-amber-100 text-lg">🌙</span>
+            </button>
+        </div>
+        
+        <div id="admin-status-container" class="hidden text-xs font-black uppercase tracking-widest text-amber-400 bg-black/20 px-4 py-2 rounded-xl border border-amber-500/30">
+            <span id="admin-status-display"></span>
+        </div>
+
+        <div id="nav-right" class="hidden flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-orange-200 ml-auto w-full md:w-auto justify-end">
+            <div class="flex flex-col items-start leading-tight gap-1">
+            	<span>Last Reset: <span id="last-reset-display" class="text-white bg-black/40 px-2 py-1 rounded">Never</span></span>
+				<span id="org-badge" class="hidden normal-case tracking-normal">ORG <b id="org-badge-id" class="font-mono text-amber-300"></b> · <span id="sync-status">Saved</span></span>
+			</div>
+			<div class="flex items-center gap-3">
+
+				<button id="org-exit-btn" onclick="orgLogout()" class="hidden px-4 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded-lg transition font-bold uppercase tracking-widest shadow-lg border-b-4 border-orange-900">Exit Org</button>
+				<button onclick="showPage('user-page'), closeProfile()" class="px-4 py-2 bg-red-800 hover:bg-red-700 rounded-lg transition font-bold uppercase tracking-widest shadow-lg border-b-4 border-red-950">Rankings</button>
+				<button onclick="checkAdminGate()" class="w-28 py-2 bg-amber-600 hover:bg-amber-550 text-stone-950 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center">Admin+</button>
+			</div>
+        </div>
+    </nav>
+
+    <!-- ORGANISATION LOGIN (first page): shown under the normal header -->
+    <div id="org-gate" class="p-6 max-w-md mx-auto mt-16">
+        <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600">
+            <h2 class="text-2xl font-black mb-6 text-center text-maroon dark:text-amber-500 uppercase tracking-widest border-b pb-4 dark:border-stone-800">Organisation Login</h2>
+            <input id="org-id-input" type="text" maxlength="6" autocomplete="off" spellcheck="false" placeholder="Organisation ID (6 characters)"
+                   onkeydown="if(event.key==='Enter'){ event.preventDefault(); document.getElementById('org-pass-input').focus(); }"
+                   class="w-full border-2 border-stone-300 dark:border-stone-700 p-3 rounded-xl outline-none focus:border-amber-500 mb-3 font-mono font-bold tracking-widest text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400">
+            <input id="org-pass-input" type="password" autocomplete="off" placeholder="Passcode"
+                   onkeydown="if(event.key==='Enter'){ event.preventDefault(); orgLogin(); }"
+                   class="w-full border-2 border-stone-300 dark:border-stone-700 p-3 rounded-xl outline-none focus:border-amber-500 mb-2 font-bold text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400">
+            <p id="org-error" class="text-red-600 dark:text-red-400 text-sm font-bold min-h-[1.25rem] mb-3"></p>
+            <button id="org-login-btn" onclick="orgLogin()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40">Login</button>
+        </div>
+    </div>
+    <input id="load-file-input" type="file" accept=".json,application/json" class="hidden" onchange="onLoadFile(event)">
+
+    <div id="user-page" class="hidden p-6 max-w-7xl mx-auto">
+        <h2 class="text-3xl font-black mb-6 text-center uppercase tracking-widest text-maroon dark:text-amber-500 drop-shadow-sm">Global Rankings</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 flex flex-col">
+                <div class="flex flex-wrap gap-2 justify-center mb-4" id="tier-filters">
+                    <button data-tier="Platinum" onclick="toggleFilter('Platinum')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">💎</button>
+                    <button data-tier="Gold" onclick="toggleFilter('Gold')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">🥇</button>
+                    <button data-tier="Silver" onclick="toggleFilter('Silver')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">🥈</button>
+                    <button data-tier="Bronze" onclick="toggleFilter('Bronze')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">🥉</button>
+                    <button data-tier="Neutral" onclick="toggleFilter('Neutral')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">⚪</button>
+                    <button data-tier="Negative" onclick="toggleFilter('Negative')" class="filter-btn px-4 py-2 bg-white dark:bg-stone-800 rounded-xl text-lg transition shadow-sm border-2 border-stone-200 dark:border-stone-700 hover:border-amber-400 grayscale opacity-50">🚫</button>
+                </div>
+            
+                <div class="mb-4 relative">
+                    <input type="text" id="frontend-search" 
+                           oninput="frontEndSearch()" 
+                           onkeydown="handleFrontendKey(event)" 
+                           placeholder="Search Student ID... (Use ↑/↓ arrows to navigate)" 
+                           class="w-full p-5 rounded-2xl border-4 border-amber-200 shadow-xl focus:border-amber-500 outline-none transition bg-white dark:bg-stone-900 dark:border-stone-700 dark:focus:border-amber-500 dark:text-amber-400 text-lg font-bold">
+                    <p class="absolute right-4 top-5 text-stone-400 text-xs font-mono dark:text-stone-500 hidden md:block">Press Enter to select</p>
+                </div>
+                <!-- Fixed 400px height -->
+				<div id="leaderboard" class="bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-amber-100 dark:border-stone-800 overflow-y-auto h-[310px] flex flex-col gap-1 p-2"></div>
+			</div>
+
+            <div class="lg:col-span-1 flex flex-col gap-4">
+                
+                <div class="bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border-t-8 border-amber-500 p-6 flex flex-col items-center">
+                    <h3 class="text-xl font-black text-maroon dark:text-amber-400 uppercase tracking-widest mb-6">Leaderboard</h3>
+                    <div id="podium-display" class="flex justify-center items-end gap-2 h-[100px] w-full">
+                        </div>
+                </div>
+
+                <div class="bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border-t-8 border-orange-500 p-6 flex flex-col items-center flex-1 min-h-[233px]">
+                    <h3 class="text-xl font-black text-maroon dark:text-amber-400 uppercase tracking-widest mb-2">Top Leagues</h3>
+                    <div id="tier-chart-display" class="flex justify-around items-end w-full h-full mt-6 relative mb-6">
+                        </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+	<div id="admin-login-page" class="hidden p-6 max-w-5xl mx-auto mt-10">
+    	<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600">
+                <h2 class="text-2xl font-black mb-6 text-center text-maroon dark:text-amber-500 uppercase tracking-widest border-b pb-4 dark:border-stone-800">Admin Authentication</h2>
+                
+                <div class="space-y-1 mb-6">
+                    <input id="auth-fname" type="text" placeholder="First Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-lname').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <input id="auth-lname" type="text" placeholder="Last Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-year').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <input id="auth-year" type="number" placeholder="Birth Year (YYYY)" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-pass').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <input id="auth-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') { event.preventDefault(); processAdminLogin(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                </div>
+
+                <button onclick="processAdminLogin()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40 mb-4">
+                    Login / Authenticate
+                </button>
+                <button onclick="guestLogin()" class="w-full bg-stone-700 text-white py-3 rounded-xl font-bold hover:bg-stone-600 transition shadow-md uppercase tracking-widest text-xs">
+                    Guest Admin Login
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-amber-600 dark:border-stone-700">
+                <h2 class="text-2xl font-black mb-6 text-center text-maroon dark:text-amber-500 uppercase tracking-widest border-b pb-4 dark:border-stone-800">Admin Profiles</h2>
+                <input id="admin-login-search-input" type="text" 
+                       oninput="adminLoginLiveSearch()" 
+                       onkeydown="handleAdminLoginSearchKey(event)" 
+                       placeholder="Search Admin... (Use ↑/↓ arrows)" 
+                       class="border-4 p-4 rounded-2xl w-full border-amber-100 focus:border-amber-500 outline-none mb-4 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold text-lg transition shadow-inner">
+                
+                <div id="admin-login-search-results" class="flex flex-col gap-2 max-h-[270px] overflow-y-auto p-1"></div>
+			</div>
+		</div>
+	</div>
+    <div id="admin-page" class="hidden p-6 max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-black text-maroon dark:text-amber-500 drop-shadow-sm">Management Dashboard</h2>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button onclick="openAdminProfilesPage()" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-600 transition border-b-4 border-black/60">
+                    APR
+                </button>
+                <button onclick="openRegistrationPage()" class="bg-amber-600 text-stone-950 px-6 py-2 rounded-xl font-black shadow-lg hover:bg-amber-500 transition border-b-4 border-amber-800">
+                    SPR
+                </button>
+                <button onclick="openRec()" class="bg-blue-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-blue-600 transition border-b-4 border-blue-950">
+                    REC
+                </button>
+                <button onclick="exportAllData()" class="bg-green-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-green-600 transition border-b-4 border-green-950">
+                    XPT
+                </button>
+                <button id="load-btn" onclick="loadAllData()" class="bg-yellow-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-yellow-600 transition border-b-4 border-black/60">
+                    LDD
+                </button>
+				<button onclick="monthlyReset()" class="bg-red-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 transition border-b-4 border-red-950">
+                    RMC
+                </button>
+            </div>
+        </div>
+        <div class= "max-h-[450px] bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600 mb-8">
+            <label class="block text-xs font-black text-orange-700 dark:text-amber-500 uppercase tracking-widest mb-3">Find Student</label>
+            <input id="admin-search-input" type="text" 
+                   oninput="adminLiveSearch()" 
+                   onkeydown="handleAdminSearchKey(event)" 
+                   placeholder="Search ID... (Alphabetical. Use ↑/↓ arrows)" 
+                   class="border-4 p-4 rounded-2xl w-full border-amber-100 focus:border-amber-500 outline-none mb-4 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold text-lg transition shadow-inner">
+            <div id="admin-search-results" class="flex flex-col gap-2 mb-4 max-h-[235px] overflow-y-auto p-2"></div>
+            <div id="point-controls" class=" max-h-[290px] hidden border-t-2 border-dashed border-orange-200 dark:border-stone-700 pt-8 mt-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+                    <div class="max-h-[240px] bg-stone-900 text-white p-8 rounded-3xl shadow-2xl border-b-8 border-amber-500 relative overflow-hidden lg:sticky lg:top-4">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
+                        <div class="flex justify-between items-start mb-8 border-b border-stone-700 pb-4 relative z-10">
+                            <button onclick="closeProfile()" class="bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close</button>
+                            <div class="flex gap-4">
+								<button onclick="openRedeem()" class="bg-blue-700 hover:bg-blue-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Redeem 🎁</button>
+                            	<button onclick="deleteProfile()" class="bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete 🗑</button>
+                        	</div>
+						</div>
+                        <div class="flex flex-row justify-between items-center gap-6 relative z-10">
+                            <div>
+                                <p class="text-amber-500 text-xs font-black uppercase tracking-widest mb-1">Target Profile</p>
+                                <h4 id="active-id-display" class="text-4xl font-black text-white tracking-tighter break-words">---</h4>
+                            </div>
+                            <div>
+                                <p class="text-amber-500 text-xs font-black uppercase tracking-widest mb-1">Total Balance</p>
+                                <p class="text-5xl font-black text-amber-400 drop-shadow-lg"><span id="active-points">1</span><span class="text-5xl ml-2 opacity-80">🪙</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-green-50 dark:bg-stone-800/50 rounded-2xl border-2 border-green-100 dark:border-green-900/30 flex flex-col max-h-[240px] overflow-hidden shadow-inner">
+                            <div class="p-4 pb-3 bg-green-50 dark:bg-stone-800/95 sticky top-0 z-10 border-b-2 border-green-200 dark:border-green-800/60 shadow-sm backdrop-blur-md">
+                                <h5 class="font-black text-green-700 dark:text-green-400 uppercase text-sm tracking-widest flex items-center gap-2 m-0">
+                                    <span class="bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-300 px-2 rounded-full">+</span> Rewards
+                                </h5>
+                            </div>
+                            <div class="p-4 overflow-y-auto">
+                                <div id="pos-buttons" class="flex flex-col gap-2"></div>
+                            </div>
+                        </div>
+                        <div class="bg-red-50 dark:bg-stone-800/50 rounded-2xl border-2 border-red-100 dark:border-red-900/30 flex flex-col max-h-[240px] overflow-hidden shadow-inner">
+                            <div class="p-4 pb-3 bg-red-50 dark:bg-stone-800/95 sticky top-0 z-10 border-b-2 border-red-200 dark:border-red-800/60 shadow-sm backdrop-blur-md">
+                                <h5 class="font-black text-red-700 dark:text-red-400 uppercase text-sm tracking-widest flex items-center gap-2 m-0">
+                                    <span class="bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-300 px-2 rounded-full">-</span> Penalties
+                                </h5>
+                            </div>
+                            <div class="p-4 overflow-y-auto">
+                                <div id="neg-buttons" class="flex flex-col gap-2"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <div id="admin-profiles-page" class="hidden p-6 max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-4">
+                <button onclick="showPage('admin-page')" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash</button>
+                <h2 class="text-3xl font-black text-maroon dark:text-amber-500 drop-shadow-sm">Admin Profiles</h2>
+            </div>
+            <button onclick="openCreateAdminPage()" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-600 transition border-b-4 border-black/60">
+                + Add Admin
+            </button>
+        </div>
+
+        <div class="max-h-[430px] bg-white dark:bg-stone-900 p-6 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600 mb-8">
+            <label class="block text-xs font-black text-orange-700 dark:text-amber-500 uppercase tracking-widest mb-3">Find Admin Profile</label>
+            <input id="admin-profiles-search" type="text" 
+                   oninput="adminProfilesLiveSearch()" 
+                   onkeydown="handleAdminProfilesKey(event)" 
+                   placeholder="Search Name... (Use ↑/↓ arrows)" 
+                   class="border-4 p-4 rounded-2xl w-full border-amber-100 focus:border-amber-500 outline-none mb-4 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold text-lg transition shadow-inner">
+            
+            <div id="admin-profiles-results" class="flex flex-col gap-2 mb-4 max-h-[260px] overflow-y-auto p-1"></div>
+
+            <div id="admin-profile-view" class="max-h-[340px] hidden border-t-2 border-dashed border-orange-200 dark:border-stone-700 pt-8 mt-4">
+                <div class="bg-stone-900 text-white p-8 rounded-3xl shadow-2xl mb-8 border-b-8 border-amber-500 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
+                    <div class="flex justify-between items-start mb-6 border-b border-stone-700 pb-4 relative z-10">
+                        <button onclick="closeAdminProfileView()" class="bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close Profile</button>
+                        <div class="flex gap-2">
+                            <button onclick="editAdminPassword()" class="bg-amber-600 hover:bg-amber-500 text-stone-950 text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Edit Password 🔑</button>
+                            <button onclick="deleteAdminProfile()" class="bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete Profile 🗑</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <div>
+                            <p class="text-amber-500 text-xs font-black uppercase tracking-widest mb-1">Admin Profile</p>
+                            <h4 id="active-admin-name" class="text-4xl font-black text-white tracking-tighter">---</h4>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-amber-500 text-xs font-black uppercase tracking-widest mb-1">Birth Year</p>
+                            <p class="text-5xl font-black text-amber-400 drop-shadow-lg"><span id="active-admin-year">---</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+		</div>
+	</div>
+    <div id="admin-register-page" class="hidden p-6 max-w-5xl mx-auto">
+        <div class="flex items-center gap-4 mb-8">
+            <button onclick="showPage('admin-page')" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash</button>
+            <h2 class="text-3xl font-black text-maroon dark:text-amber-500">Database Entry</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600">
+                <h3 class="text-xl font-black mb-6 dark:text-amber-400 text-maroon uppercase tracking-widest border-b pb-4 dark:border-stone-800">Quick Add</h3>
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-xs font-black text-orange-700 dark:text-amber-600 uppercase tracking-widest mb-2 block">Student ID</label>
+                        <input id="reg-id" type="text" placeholder="Enter ID & Press Enter..." onkeydown="if(event.key==='Enter') registerStudent()"
+                               class="w-full border-4 p-4 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold text-lg transition">
+                    </div>
+                    <button onclick="registerStudent()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40">
+                        Register Student
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-amber-600 dark:border-stone-700">
+                <h3 class="text-xl font-black mb-4 dark:text-amber-400 text-maroon uppercase tracking-widest border-b pb-4 dark:border-stone-800">Bulk Import</h3>
+                <p class="text-[10px] text-orange-600 dark:text-stone-400 mb-4 font-mono font-bold bg-orange-100 dark:bg-stone-800 p-2 rounded">FORMAT: ID, Points (Points Optional)</p>
+                <textarea id="import-area" rows="6" placeholder="STUDENT_A, 5&#10;STUDENT_B"
+                          class="w-full border-4 p-4 rounded-xl text-sm font-mono bg-orange-50 dark:bg-stone-800 dark:border-stone-700 mb-6 outline-none focus:border-amber-500 dark:text-white transition shadow-inner resize-none"></textarea>
+                <button onclick="importStudents()" class="w-full bg-stone-800 text-white py-4 rounded-xl font-black hover:bg-stone-600 transition shadow-xl uppercase tracking-widest border-b-4 border-black/60">
+                    Process CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-create-page" class="hidden p-6 max-w-2xl mx-auto">
+        <div class="flex items-center gap-4 mb-8">
+            <button onclick="openAdminProfilesPage()" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Profiles</button>
+            <h2 class="text-3xl font-black text-maroon dark:text-amber-500">Create Admin Profile</h2>
+        </div>
+
+        <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-stone-800 dark:border-stone-600">
+            <h3 class="text-xl font-black mb-6 dark:text-amber-400 text-stone-800 uppercase tracking-widest border-b pb-4 dark:border-stone-800">New Admin Details</h3>
+            <div class="space-y-4 mb-6">
+                <input id="new-admin-fname" type="text" placeholder="First Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('new-admin-lname').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                <input id="new-admin-lname" type="text" placeholder="Last Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('new-admin-year').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                <input id="new-admin-year" type="number" placeholder="Birth Year (YYYY)" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('new-admin-pass').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                <input id="new-admin-pass" type="password" placeholder="Custom Password (Optional)" onkeydown="if(event.key==='Enter') { event.preventDefault(); createAdmin(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+            </div>
+            <button onclick="createAdmin()" class="w-full bg-stone-800 text-white py-4 rounded-xl font-black hover:bg-stone-600 transition shadow-xl uppercase tracking-widest border-b-4 border-black/60">
+                Register Admin
+            </button>
+        </div>
+    </div>
+
+
+    <div id="redeem-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[85vh]">
+            <div class="bg-blue-800 p-5 flex justify-between items-center border-b-4 border-blue-500">
+                <div>
+                    <h3 class="text-xl font-black text-white tracking-widest uppercase">🎁 Redeem</h3>
+                    <p id="redeem-sub" class="text-xs font-bold text-blue-200 tracking-widest uppercase"></p>
+                </div>
+                <button onclick="closeRedeem()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+            </div>
+            <div id="redeem-body" tabindex="-1" class="p-5 overflow-y-auto outline-none"></div>
+        </div>
+    </div>
+
+    <div id="rec-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500">
+            <div class="bg-blue-800 p-5 flex justify-between items-center border-b-4 border-blue-500">
+                <h3 class="text-xl font-black text-white tracking-widest uppercase">ReC · Code Checker</h3>
+                <button onclick="closeRec()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+            </div>
+            <div class="p-5">
+                <label class="text-xs font-black uppercase tracking-widest text-stone-600 dark:text-stone-300">Coupon code (case sensitive)</label>
+                <input id="rec-input" type="text" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();submitRec();}" placeholder="Paste the coupon code" class="mt-2 w-full p-3 rounded-xl border-2 border-amber-200 dark:border-stone-700 bg-white dark:bg-stone-800 font-mono font-bold outline-none focus:border-blue-500">
+                <p id="rec-error" class="mt-3 min-h-[1.25rem] text-sm font-bold text-red-600 dark:text-red-400"></p>
+                <button onclick="submitRec()" class="mt-2 w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-blue-950 shadow-lg">Validate</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rec-success-modal" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-green-500">
+            <div class="bg-green-700 p-5 text-center border-b-4 border-green-500">
+                <h3 class="text-xl font-black text-white tracking-widest uppercase">Redeem Successful</h3>
+            </div>
+            <div id="rec-success-body" class="p-5"></div>
+            <div class="px-5 pb-5"><button id="rec-ok" onclick="closeRecSuccess()" class="w-full py-3 bg-green-700 hover:bg-green-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-green-950 shadow-lg">OK</button></div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[92vh]">
+            <div class="bg-blue-800 p-4 flex justify-between items-center border-b-4 border-blue-500">
+                <h3 class="text-lg font-black text-white tracking-widest uppercase">QR Code</h3>
+                <button onclick="closeQR()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto text-center">
+                <img id="qr-img" alt="Coupon QR code" class="mx-auto bg-white rounded-xl shadow max-w-full" style="max-height:60vh">
+                <p class="mt-3 text-xs font-bold text-stone-500 dark:text-stone-400">A printable PNG was sent to your browser's downloads. Print it as it is.</p>
+                <div class="mt-4 flex gap-3">
+                    <button onclick="downloadQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">Download again</button>
+                    <button id="qr-close" onclick="closeQR()" class="flex-1 px-4 py-2 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700 text-[10px] font-black uppercase tracking-widest transition">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border-4 border-amber-500 flex flex-col max-h-[630px]">
+            <div class="bg-maroon p-6 flex justify-between items-center border-b-4 border-amber-600 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiPjwvcmVjdD4KPC9zdmc+')] opacity-20"></div>
+                <div class="relative z-10">
+				    <h3 class="text-3xl font-black text-white tracking-tighter" id="modal-id">---</h3>
+				    <p class="text-amber-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+				        Active Profile <span id="modal-tier-text" class="inline-block w-44 text-left"></span>
+				    </p>
+				</div>
+                <div class="text-right relative z-10 flex items-center gap-6">
+                    <div>
+                        <p class="text-4xl font-black text-amber-400"><span id="modal-points">0</span> 🪙</p>
+                    </div>
+                    <button onclick="closeModal()" class="bg-black/40 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition font-black text-xl border-2 border-white/20">✕</button>
+                </div>
+            </div>
+			<div class="p-6 flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
+			    <div class="bg-white dark:bg-stone-800 rounded-2xl p-4 shadow-inner border border-orange-200 dark:border-stone-700 flex flex-col min-h-0 h-full">
+			        <div class="flex-1 min-h-0 relative">
+			            <canvas id="historyChart"></canvas>
+			        </div>
+			    </div>
+		    	<div class="bg-white dark:bg-stone-800 rounded-2xl p-4 shadow-inner border border-orange-200 dark:border-stone-700 flex flex-col min-h-0 h-full">
+		        	<h4 class="font-black text-maroon dark:text-amber-500 uppercase tracking-widest text-sm border-b-2 border-orange-100 dark:border-stone-700 pb-2 mb-4 shrink-0">Transaction Log</h4>
+		        	<div id="modal-history-list" class="flex-1 overflow-y-auto space-y-2 pr-2 min-h-0"></div>
+		    	</div>
+			</div>
+    	</div>
+	</div>
+    <script>
+        const multi = 10;
+        const CONFIG = { 
+            STARTING_POINTS: 10, 
+            TIERS: { 
+                PLATINUM: 135 * multi, 
+                GOLD: 91 * multi, 
+                SILVER: 49 * multi 
+            } 
+        };
+        const POS_LIST = [
+            {l:"Attendance", p: 1 * multi, d:"Present the entire week(per week)."}, {l:"Uniform", p: 1 * multi, d:"Perfect Dress Code all week(per week)."}, {l:"Helping", p: 0.5 * multi, d:"Assisting peers or teachers(per day)."}, {l:"Polite", p: 0.5 * multi, d:"Exemplary manners(per day)."},
+            {l:"Curious", p: 1 * multi, d:"Researched/Studied/Completed Work deeply at home(per subject)."}, {l:"Grade Up", p: 2.5 * multi, d:"Improvement of +10% or more from last month(per subject)."}, {l:"Participation", p: 1.5 * multi, d:"Active engagement in extracurriculars(per week)."}, {l:"Extra Credit", p: 1 * multi, d:"Voluntary extra assignments(per assignment)."},
+            {l:"Organisation", p: 0.5 * multi, d:"Neat desk and Materials prepared before the teacher(per day)."}, {l:"Honesty", p: 1.0 * multi, d:"Telling the truth in difficult situations(per day)."}, {l:"Leadership", p: 0.5 * multi, d:"Guidance and Co-operation(per day)."}, {l:"Library", p: 1.0 * multi, d:"Constructive use of library(per use)."},
+            {l:"Sports", p: 1.5 * multi, d:"Excellence or sportsmanship(per week)."}, {l:"Creativity", p: 1.5 * multi, d:"Out-of-the-box thinking(per week)."}, {l:"Proactivity", p: 1.0 * multi, d:"Focused in class, and active(per day)."}, {l:"Notes", p: 0.5 * multi, d:"Detailed and simple, with pace(per day)."},
+            {l:"Early Bird", p: 1.0 * multi, d:"Assignment Submitted 1 or more days before the deadline(per assignment)."}, {l:"Peer Support", p: 0.5 * multi, d:"Tutoring or emotional support (confirmed by the peer)."}, {l:"1st Position", p: 2.0 * multi, d:"Topping an assessment or major event(per event)."}
+        ];
+
+        const NEG_LIST = [
+            {l:"Late", p: -0.5 * multi, d:"Arriving after the teacher(per day)."}, {l:"Busy", p: -3.5 * multi, d:"Incomplete or missing homework(per subject)."}, {l:"Dress Code", p: -1.5 * multi, d:"Violation of the policy (per day)."}, {l:"Disruption", p: -2.5 * multi, d:"Interrupting the class flow(per occurence)."},
+            {l:"Littering", p: -1.0 * multi, d:"Leaving trash behind(per day)."}, {l:"Language", p: -3.5 * multi, d:"Use of vulgar or inappropriate words(per occurence)."}, {l:"Fighting", p: -6.5 * multi, d:"Physical altercation(per occurence)."}, {l:"Cheating", p: -6.5 * multi, d:"Academic dishonesty(per occurence)."},
+            {l:"Vandalism", p: -6.5 * multi, d:"Damaging school property(per occurence)."}, {l:"Grade Down", p: -4.0 * multi, d:"Drop of -5% or more from last month."}, {l:"Unfocused", p: -2.5 * multi, d:"Not paying attention in class(per day)."}, {l:"Late Sub", p: -2.5 * multi, d:"Submitting assignments after the deadline(per day late)."},
+            {l:"Bullying", p: -6.5 * multi, d:"Harassment of any form."}, {l:"Noise", p: -3.5 * multi, d:"Shouting in quiet zones."}, {l:"Theft", p: -6.5 * multi, d:"Stealing property."},
+            {l:"Lying", p: -4.0 * multi, d:"Deceiving staff or peers(per day)."}, {l:"Ignore Staff", p: -3.5 * multi, d:"Disobeying direct instructions(per day)."}, {l:"Running", p: -3.0 * multi, d:"Running in the hallways(per day)."}, {l:"Discipline", p: -2.5 * multi, d:"General disciplinary infraction(per occurence)."}
+        ];
+
+        // --- REDEEM CATALOG ---
+        // Each benefit needs a label (l) and a description (d). Optional:
+        //   o:   the 4 options shown when the benefit is opened (tick 1 or more; each ticked option costs REDEEM_COST points)
+        //   all: true = no choices; every option is compulsory, so the benefit costs the full 4 x REDEEM_COST
+        //   c:   points per option for this benefit only (default REDEEM_COST)
+        //   n:   how many options can be ticked (default 4); the rest are shown greyed out
+        // A benefit without "o" takes its options from REDEEM_PERKS below (optional fallback).
+        const COMPULSORY = ["Compulsory for benefit", "Compulsory for benefit", "Compulsory for benefit", "Compulsory for benefit"];
+        const REDEEM_LISTS = {
+            Silver: [
+                {l:"Sticker Or Stamp Of Choice", d:"Pick a sticker, stamp or craft.",
+                    o:["Decorative sticker", "Assignment stamp", "Custom craft (flower, bird, etc. origami)", "Choose it yourself (if unticked, a random one is given)"]},
+                {l:"Stationery Pick", d:"Pick a stationery item.",
+                    o:["Cute pencil", "Custom eraser", "Fancy pen", "Nice marker"]},
+                {l:"Showtime", d:"Bring a personal item or tell a hobby, and pick a person to do the same.",
+                    o:["Object (yourself)", "Hobby (yourself)", "Hobby (friend)", "Object (friend)"]},
+                {l:"Bookmark Pick", d:"Select a custom laminated or decorative bookmark.",
+                    o:["1 bookmark", "1 bookmark", "1 bookmark", "1 bookmark"]},
+                {l:"Mystery Prize Drawer Pull", d:"Reach into a blind-draw box for a surprise item.", all:true,
+                    o:COMPULSORY},
+                {l:"Question Exemption", d:"Skip a designated question on a test or worksheet.",
+                    o:["1 question", "1 question", "1 question", "1 question"]},
+                {l:"Class Quote", d:"Class quote (whole benefit, no options).", all:true,
+                    o:COMPULSORY}
+            ],
+            Gold: [
+                {l:"Brain Break / Game Choice", d:"Choose the class's energizer video or warm-up game.",
+                    o:["2 mins", "2 mins", "2 mins", "2 mins"]},
+                {l:"Positive Phone Call / Email Home", d:"Teacher sends a proud message.",
+                    o:["Message", "Note in diary", "Call privately", "Call in front of class"]},
+                {l:"Custom Seat", d:"Choose your seat for a day.",
+                    o:["Front / back", "Left / right", "Alone / with a friend", "Switch with a person"]},
+                {l:"Hall Pass VIP", d:"Enjoy unrestricted hall pass privileges.",
+                    o:["1 class", "1 class/period", "1 class", "1 class"]},
+                {l:"Solo Work Exemption", d:"Work alone on an assignment designated as a group project.", all:true, o:COMPULSORY},
+                {l:"Homework Delay", d:"Delay an assignment without tardies: 1 day per option, 10 points each.", c:10, n:2,
+                    o:["1 day", "1 day", "Not available", "Not available"]},
+                {l:"Partner Pick Pass", d:"Choose your project partner regardless of how groups are assigned.", all:true, o:COMPULSORY}
+            ],
+            Platinum: [
+                {l:"Homework Pass", d:"Skip an assignment without penalty.", all:true, o:COMPULSORY},
+                {l:"Open Book Quiz Pass", d:"Open book quiz pass.", all:true, o:COMPULSORY},
+                {l:"Laminated Certificate Of Awesome", d:"Special recognition in morning assembly. Receive a personalized achievement certificate.", all:true, o:COMPULSORY},
+                {l:"Drop Your Lowest Grade", d:"Replace or drop the lowest score on a daily quiz or assignment.", all:true, o:COMPULSORY},
+                {l:"Class Movie Session", d:"Join a class movie session.", o:["15 mins", "15 mins", "15 mins", "15 mins"]},
+                {l:"Casuals For A Day", d:"Dress casually for a day.", all:true, o:COMPULSORY},
+                {l:"Teacher For 1 Class", d:"Be the teacher for one class.", all:true, o:COMPULSORY}
+            ]
+        };
+        const REDEEM_TIER_RANK = { Silver: 1, Gold: 2, Platinum: 3 };
+        const REDEEM_TIER_EMOJI = { Silver: "🥈", Gold: "🥇", Platinum: "💎" };
+
+        // Each option picked inside a benefit costs this many points (change it here only).
+        const REDEEM_COST = 5;
+        // Every benefit opens a table with this many options (the PERKS table below must list this many per benefit).
+        const REDEEM_OPTIONS = 4;
+        // PERKS: optional fallback options for a benefit that has no "o" list, keyed by the benefit's label in REDEEM_LISTS.
+        // Coupon ID (4 chars) = tier letter (S/G/P) + benefit number + perk letter (A-D = how many options picked) + perk digit (which combination).
+        const REDEEM_PERKS = {};
+
+        // =====================================================================
+        //  CLOUD DATABASE LAYER (Firebase Authentication + Cloud Firestore)
+        //  Everything lives under  orgs/<ORG ID>/...   The only thing kept in localStorage is the organisation ID.
+        //    orgs/<ID>                -> fields: admins, lastResetDate, darkMode
+        //    orgs/<ID>/students/<key> -> one document per student
+        //    orgs/<ID>/ledger/<code>  -> one document per coupon code
+        // =====================================================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyD-3ekvbtsZs2m3rIjyq-TSd9sDgNYZPu0",
+            authDomain: "uft-pointsystem.firebaseapp.com",
+            databaseURL: "https://uft-pointsystem-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "uft-pointsystem",
+            storageBucket: "uft-pointsystem.firebasestorage.app",
+            messagingSenderId: "608392136336",
+            appId: "1:608392136336:web:8af00865da03931fd7ba15"
+        };
+        const ORG_EMAIL_DOMAIN = 'uft.pointsystem-org.com';   // org logins are stored as <orgid>@this-domain (must match what you create in Firebase Authentication)
+        const ORG_ID_KEY = 'ps_orgId', ORG_PASS_KEY = 'ps_orgPass';   // the ONLY localStorage keys used: saved org login
+        const MASTER_PASS_KEY = 'ps_masterPass';          // sessionStorage only: cleared the moment the tab/browser closes
+        let orgMasterPasscode = '';                        // this organisation's Master Passcode, cached in memory for the session
+        const secondaryPasscode = () => orgMasterPasscode.split('').reverse().join('');
+
+        let students = [], admins = [], ledgerCache = {}, lastResetDate = 'Never';
+        let syncedStudents = {}, syncedLedger = {};       // last known cloud copy (key -> JSON text)
+        let fbReady = false, auth = null, db = null, orgId = null, orgReady = false, pendingWrites = 0, unsubs = [];
+
+        const parseJ = (s, fb) => { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } };
+        const sKey = id => encodeURIComponent(id).replace(/\./g, '%2E');   // document IDs may not contain / or be . or ..
+        const orgDoc = () => db.collection('orgs').doc(orgId);
+        const sortStudents = a => a.sort((x, y) => (((x.history || [])[0] || {}).ts || 0) - (((y.history || [])[0] || {}).ts || 0));
+
+        function setSync(state) {
+            const el = document.getElementById('sync-status'); if (!el) return;
+            el.textContent = state === 'saving' ? 'Saving…' : state === 'error' ? '⚠ Error' : 'Saved';
+            el.style.color = state === 'error' ? '#fca5a5' : '';
+        }
+        // ops: [{ref, data}] set | [{ref, data, merge:true}] merge | [{ref, del:true}] delete
+        function cloudWrite(ops) {
+            if (!orgReady || !ops.length) return;
+            for (let i = 0; i < ops.length; i += 400) {
+                const batch = db.batch();
+                ops.slice(i, i + 400).forEach(o => { if (o.del) batch.delete(o.ref); else if (o.merge) batch.set(o.ref, o.data, { merge: true }); else batch.set(o.ref, o.data); });
+                pendingWrites++; setSync('saving');
+                batch.commit()
+                    .then(() => { pendingWrites--; setSync(pendingWrites ? 'saving' : 'ok'); })
+                    .catch(e => { pendingWrites--; setSync('error'); console.error('Cloud save failed, save file to prevent data loss.', e); });
+            }
+        }
+        const dbSet = (key, val) => { if (orgReady) cloudWrite([{ ref: orgDoc(), data: { [key]: val }, merge: true }]); };
+        function pushDiff(coll, cur, synced) {
+            const ops = [];
+            for (const k in cur) if (synced[k] !== cur[k]) ops.push({ ref: orgDoc().collection(coll).doc(k), data: { d: cur[k] } });
+            for (const k in synced) if (!(k in cur)) ops.push({ ref: orgDoc().collection(coll).doc(k), del: true });
+            return ops;
+        }
+        function saveAdmins() { dbSet('admins', JSON.stringify(admins)); }
+        window.addEventListener('beforeunload', e => { if (pendingWrites > 0) { e.preventDefault(); e.returnValue = ''; } });
+        window.addEventListener('pagehide', () => { try { sessionStorage.removeItem(MASTER_PASS_KEY); } catch (e) {} });
+
+        function initFirebase() {
+            try {
+                if (/PASTE_/.test(JSON.stringify(FIREBASE_CONFIG))) throw new Error('Cloudbase config not pasted yet.');
+                firebase.initializeApp(FIREBASE_CONFIG);
+                auth = firebase.auth(); db = firebase.firestore();
+                auth.setPersistence(firebase.auth.Auth.Persistence.NONE);   // every launch asks for the passcode again
+                fbReady = true;
+            } catch (e) {
+                document.getElementById('org-error').textContent = 'Cloud database is not set up yet ().';
+            }
+        }
+
+        // ---- live sync from other devices of the same organisation ----
+        const mapFromSnap = snap => { const m = {}; snap.forEach(d => { const t = d.data().d; if (typeof t === 'string') m[d.id] = t; }); return m; };
+        function refreshAfterRemote() {
+            renderLeaderboard();
+            if (document.getElementById('admin-page').classList.contains('hidden')) return;
+            if (activeID && !students.find(s => s.id === activeID)) { activeID = null; closeProfile(); return; }
+            if (document.getElementById('redeem-modal').classList.contains('hidden')) activeID ? updatePanel() : adminLiveSearch();
+        }
+        function onStudentsRemote(snap) {
+            if (snap.metadata.hasPendingWrites) return;   // our own writes still travelling; the confirmed copy follows
+            const v = mapFromSnap(snap);
+            let changed = false;
+            for (const k in v) if (syncedStudents[k] !== v[k]) changed = true;
+            for (const k in syncedStudents) if (!(k in v)) changed = true;
+            if (!changed) return;
+            syncedStudents = v;
+            students = sortStudents(Object.values(v).map(t => parseJ(t, null)).filter(Boolean));
+            refreshAfterRemote();
+        }
+        function onLedgerRemote(snap) {
+            if (snap.metadata.hasPendingWrites) return;
+            const v = mapFromSnap(snap);
+            let changed = false;
+            for (const k in v) if (syncedLedger[k] !== v[k]) changed = true;
+            for (const k in syncedLedger) if (!(k in v)) changed = true;
+            if (!changed) return;
+            syncedLedger = v; ledgerCache = {};
+            for (const c in v) { const r = parseJ(v[c], null); if (r) ledgerCache[c] = r; }
+        }
+        function onOrgRemote(snap) {
+            if (snap.metadata.hasPendingWrites) return;
+            const v = snap.data() || {};
+            const a = parseJ(v.admins, []); if (Array.isArray(a) && JSON.stringify(a) !== JSON.stringify(admins)) admins = a;
+            const d = v.lastResetDate || 'Never'; if (d !== lastResetDate) { lastResetDate = d; updateLastReset(); }
+            const mp = (v.masterPasscode || '').toString();
+            if (mp !== orgMasterPasscode) { orgMasterPasscode = mp; try { sessionStorage.setItem(MASTER_PASS_KEY, orgMasterPasscode); } catch (e) {} }
+        }
+
+        // ---- organisation login ----
+        function orgError(m) { document.getElementById('org-error').textContent = m; }
+        async function orgLogin() {
+            const id = document.getElementById('org-id-input').value.trim(), pass = document.getElementById('org-pass-input').value;
+            const btn = document.getElementById('org-login-btn');
+            orgError('');
+            if (!fbReady) return orgError('Cloud database is not set up yet (paste your Firebase config into FIREBASE_CONFIG).');
+            if (!/^[A-Za-z0-9]{6}$/.test(id)) return orgError('Organisation ID must be exactly 6 letters or digits.');
+            if (!pass) return orgError('Enter the passcode.');
+            btn.disabled = true; btn.textContent = 'Checking…';
+            try {
+                await auth.signInWithEmailAndPassword(id.toLowerCase() + '@' + ORG_EMAIL_DOMAIN, pass);
+                orgId = id;
+                let res;
+                try { res = await Promise.all([orgDoc().get(), orgDoc().collection('students').get(), orgDoc().collection('ledger').get()]); }
+                catch (e) { await auth.signOut(); orgId = null; throw { code: e && e.code === 'permission-denied' ? 'ps/inactive' : 'auth/network-request-failed' }; }
+                localStorage.setItem(ORG_PASS_KEY, pass);
+                startOrg(res[0].data() || {}, mapFromSnap(res[1]), mapFromSnap(res[2]));
+            } catch (e) {
+                const c = (e && e.code) || '';
+                if (c !== 'auth/network-request-failed' && c !== 'auth/too-many-requests') localStorage.removeItem(ORG_PASS_KEY);   // a saved passcode that no longer works is forgotten
+                orgError(c === 'ps/inactive' ? 'This organisation is not active. Contact the owner.'
+                    : c === 'auth/network-request-failed' ? 'No internet connection.'
+                    : c === 'auth/too-many-requests' ? 'Too many attempts. Wait a few minutes and try again.'
+                    : 'Wrong Organisation ID or passcode.');
+                document.getElementById('org-pass-input').select();
+            } finally { btn.disabled = false; btn.textContent = 'Login'; }
+        }
+        function startOrg(v, sMap, lMap) {
+            syncedStudents = sMap;
+            students = sortStudents(Object.values(sMap).map(t => parseJ(t, null)).filter(Boolean));
+            const a = parseJ(v.admins, []); admins = Array.isArray(a) ? a : [];
+            syncedLedger = lMap; ledgerCache = {};
+            for (const c in lMap) { const r = parseJ(lMap[c], null); if (r) ledgerCache[c] = r; }
+            lastResetDate = v.lastResetDate || 'Never';
+            isDarkMode = v.darkMode === true;
+            orgMasterPasscode = (v.masterPasscode || '').toString();
+            try { sessionStorage.setItem(MASTER_PASS_KEY, orgMasterPasscode); } catch (e) {}
+            orgReady = true;
+            localStorage.setItem(ORG_ID_KEY, orgId);
+            document.getElementById('org-pass-input').value = '';
+            document.getElementById('org-gate').classList.add('hidden');
+            document.getElementById('nav-right').classList.remove('hidden');
+            document.getElementById('org-badge-id').textContent = orgId;
+            document.getElementById('org-badge').classList.remove('hidden');
+            document.getElementById('org-exit-btn').classList.remove('hidden');
+            setSync('ok');
+            applyTheme(); updateLastReset(); renderLeaderboard(); showPage('user-page');
+            const opt = { includeMetadataChanges: true }, noop = () => {};
+            unsubs = [
+                orgDoc().collection('students').onSnapshot(opt, onStudentsRemote, noop),
+                orgDoc().collection('ledger').onSnapshot(opt, onLedgerRemote, noop),
+                orgDoc().onSnapshot(opt, onOrgRemote, noop)
+            ];
+            Coupons.sweep();
+        }
+        function orgLogout() {
+            unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = [];
+            orgReady = false; orgId = null;
+            students = []; admins = []; ledgerCache = {}; syncedStudents = {}; syncedLedger = {}; lastResetDate = 'Never'; activeID = null;
+            orgMasterPasscode = ''; try { sessionStorage.removeItem(MASTER_PASS_KEY); } catch (e) {}
+            document.getElementById('org-badge').classList.add('hidden');
+            document.getElementById('org-exit-btn').classList.add('hidden');
+            ['profile-modal', 'redeem-modal', 'rec-modal', 'rec-success-modal', 'qr-modal'].forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); });
+            performAdminLogout();
+            if (auth) auth.signOut();
+            renderLeaderboard(); updateLastReset();
+            document.querySelectorAll('#user-page, #admin-page, #admin-register-page, #admin-create-page, #admin-login-page, #admin-profiles-page').forEach(p => p.classList.add('hidden'));
+            document.getElementById('nav-right').classList.add('hidden');
+            document.getElementById('org-gate').classList.remove('hidden');
+            fillSavedLogin();
+            orgError('');
+            setTimeout(() => document.getElementById(document.getElementById('org-id-input').value ? 'org-pass-input' : 'org-id-input').focus(), 50);
+        }
+
+        // ---- backup: export everything of this organisation to a file on this device, and load it back ----
+        function exportAllData() {
+            if (!orgReady) return;
+            const data = { app: 'PointSystem', format: 1, orgId, exportedAt: new Date().toISOString(),
+                students, admins, ledger: ledgerCache, lastResetDate, darkMode: isDarkMode };
+            const p = n => String(n).padStart(2, '0'), d = new Date();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+            a.download = `PointSystem_${orgId}_${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+            alertAfterPaint(`Backup downloaded: ${students.length} students, ${admins.length} admins.`);
+        }
+        function loadAllData() {
+            if (!orgReady) return;
+            document.getElementById('load-file-input').click();
+        }
+        function onLoadFile(ev) {
+            const f = ev.target.files[0]; ev.target.value = '';
+            if (!f || !orgReady) return;
+            const r = new FileReader();
+            r.onload = () => {
+                let d; try { d = JSON.parse(r.result); } catch (e) { return alert('This file is not a valid backup.'); }
+                if (!d || d.app !== 'PointSystem' || !Array.isArray(d.students) || !Array.isArray(d.admins) || d.students.some(s => !s || typeof s.id !== 'string'))
+                    return alert('This file is not a PointSystem backup.');
+                const other = d.orgId && d.orgId !== orgId ? ` (made from organisation ${d.orgId})` : '';
+                if (!confirm(`Replace ALL data of organisation ${orgId} with this backup${other}: ${d.students.length} students, ${d.admins.length} admins?`)) return;
+                students = d.students; admins = d.admins;
+                Coupons.saveLedger(d.ledger && typeof d.ledger === 'object' ? d.ledger : {});
+                lastResetDate = d.lastResetDate || 'Never'; isDarkMode = d.darkMode === true;
+                activeID = null;
+                saveAdmins(); dbSet('lastResetDate', lastResetDate); dbSet('darkMode', isDarkMode); save();
+                performAdminLogout();                       // signs out to the Rankings page
+                applyTheme(); updateLastReset();
+                alertAfterPaint(`Backup loaded: ${students.length} students, ${admins.length} admins. You have been signed out.`);
+            };
+            r.readAsText(f);
+        }
+
+        function fillSavedLogin() {
+            document.getElementById('org-id-input').value = localStorage.getItem(ORG_ID_KEY) || '';
+            document.getElementById('org-pass-input').value = localStorage.getItem(ORG_PASS_KEY) || '';
+        }
+        function initOrgGate() {
+            initFirebase();
+            document.querySelectorAll('#user-page, #admin-page, #admin-register-page, #admin-create-page, #admin-login-page, #admin-profiles-page').forEach(p => p.classList.add('hidden'));
+            document.getElementById('nav-right').classList.add('hidden');
+            fillSavedLogin();
+            setTimeout(() => document.getElementById(document.getElementById('org-id-input').value ? 'org-pass-input' : 'org-id-input').focus(), 250);
+            if (fbReady && localStorage.getItem(ORG_ID_KEY) && localStorage.getItem(ORG_PASS_KEY)) setTimeout(orgLogin, 350);   // saved login: press Enter automatically
+        }
+
+        let activeID = null;
+        let chartInstance = null;
+        let loggedInAdmin = ""; // Track who is logged in
+        let isGuestSession = false; // Guests are blocked from processing redemptions
+        let loggedInAdminProfile = null; // {fname, lname, year} of the registered admin (null for guest/none)
+
+        // --- DATE FORMATTER ---
+        function getFormattedDate() {
+            const d = new Date();
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${dd} ${mm} ${yyyy} ${hh}:${min}`;
+        }
+
+
+        // =====================================================================
+        //  COUPON ENGINE (used by the Redeem and ReC buttons)
+        //  API: Coupons.redeemBenefit(...), Coupons.redeemCode(code), Coupons.inspect(code), Coupons.sweep()
+        //  Limits and rules below are the ONLY place to change them.
+        // =====================================================================
+        const Coupons = (function () {
+        const LIMITS = {
+            userIdMax: 999999,   // user ID = 1 capital letter + as many digits as this number has
+            scoreMax: 100000,    // score magnitude runs 0 .. scoreMax
+            firstNameLen: 6,     // letters of the first name used in the issuer ID
+            lastNameLen: 6       // letters of the last name used in the issuer ID
+        };
+        
+        const RULES = {
+            validDays: 2,         // a coupon expires this many days after it is issued
+            futureSlackMin: 5,    // tolerated clock difference (minutes) before "issued in the future" is flagged
+            tierMin: { S: CONFIG.TIERS.SILVER, G: CONFIG.TIERS.GOLD, P: CONFIG.TIERS.PLATINUM },   // minimum score for each tier letter
+        };
+        
+        // ===================== CORE START =====================
+        // Code = body + 1 key char (inserted at index 9) + 2 checksum chars, with NO separators.
+        // Body pieces are scattered in the order below. Sign and tier letters are stored TWICE (copies must match).
+        //   uidL  userid letter (A-Z) | sg1 sign copy 1 (p/n/z) | score magnitude in binary
+        //   cl1   tier copy 1 (G/P/S/N) | f4 first-name letters | uidN userid number in hex
+        //   req   request id (A0A0) | l5 last-name letters | sg2 sign copy 2
+        //   yr    birth year in hex | dt issue date ddmmyyyy in base36 | cl2 tier copy 2 | tm issue time hhmm in base36
+        // The whole body is shifted through 0-9A-Za-z by a random key, so every code differs,
+        // and a weighted checksum of the result is appended.
+        const A62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const UID_DIGITS = String(LIMITS.userIdMax).length;
+        const SCORE_BITS = LIMITS.scoreMax.toString(2).length;
+        const UID_HEX = LIMITS.userIdMax.toString(16).length;
+        const YEAR_HEX = 3;   // fits any birth year up to 4095, so there is no year range limit
+        const LAYOUT = [['uidL',1],['sg1',1],['score',SCORE_BITS],['cl1',1],['f4',LIMITS.firstNameLen],['uidN',UID_HEX],
+                        ['req',4],['l5',LIMITS.lastNameLen],['sg2',1],['yr',YEAR_HEX],['dt',5],['cl2',1],['tm',3]];
+        const BODY_LEN = LAYOUT.reduce((a, [, n]) => a + n, 0);
+        const KEY_POS = 9;
+        const TOTAL = BODY_LEN + 3;
+        const BODY_END = TOTAL - 2;
+        const TIERS = { G:'Gold', P:'Platinum', S:'Silver', N:'Not eligible' };
+        const SIGNS = { p:'positive', n:'negative', z:'zero' };
+        const RE = {
+            uid: new RegExp(`^[A-Z][0-9]{${UID_DIGITS}}$`),
+            uidHex: new RegExp(`^[0-9A-F]{${UID_HEX}}$`),
+            bin: new RegExp(`^[01]{${SCORE_BITS}}$`),
+            yrHex: new RegExp(`^[0-9A-F]{${YEAR_HEX}}$`),
+            f4: new RegExp(`^[a-z]{${LIMITS.firstNameLen}}$`),
+            l5: new RegExp(`^[a-z]{${LIMITS.lastNameLen}}$`)
+        };
+        
+        const pad = (v, n) => String(v).padStart(n, '0');
+        // shift grows with position (key + i squared), so repeated characters (e.g. runs of binary 0s) do not stay repeated
+        const rot = (s, k, back) => [...s].map((c, i) => A62[(((A62.indexOf(c) + (back ? -(k + i * i) : k + i * i)) % 62) + 62) % 62]).join('');
+        function checksum(s) {
+            let v = 0;
+            for (let i = 0; i < s.length; i++) v += (i + 1) * A62.indexOf(s[i]);
+            v %= 3844;
+            return A62[Math.floor(v / 62)] + A62[v % 62];
+        }
+        
+        // Which tier letter a score earns (N = Bronze and below, cannot use coupons)
+        function tierFor(sign, score) {
+            if (sign !== 'p') return 'N';
+            if (score >= RULES.tierMin.P) return 'P';
+            if (score >= RULES.tierMin.G) return 'G';
+            if (score >= RULES.tierMin.S) return 'S';
+            return 'N';
+        }
+        
+        // Encode, then decode the result as a self-check, so a bad code is never handed out
+        function makeCode(d) {
+            const c = encode(d);
+            decode(c);
+            return c;
+        }
+        
+        function encode(d) {
+            const p = {
+                uidL: d.uid[0], sg1: d.sign,
+                score: d.score.toString(2).padStart(SCORE_BITS, '0'),
+                cl1: d.cls, f4: d.f4,
+                uidN: Number(d.uid.slice(1)).toString(16).toUpperCase().padStart(UID_HEX, '0'),
+                req: d.req, l5: d.l5, sg2: d.sign,
+                yr: d.year.toString(16).toUpperCase().padStart(YEAR_HEX, '0'),
+                dt: parseInt(d.date, 10).toString(36).toUpperCase().padStart(5, '0'),
+                cl2: d.cls,
+                tm: parseInt(d.time, 10).toString(36).toUpperCase().padStart(3, '0')
+            };
+            const body = LAYOUT.map(([n]) => p[n]).join('');
+            const k = 1 + Math.floor(Math.random() * 61);
+            const r = rot(body, k);
+            const s = r.slice(0, KEY_POS) + A62[k] + r.slice(KEY_POS);
+            return s + checksum(s);
+        }
+        
+        function decode(input, now = new Date()) {
+            const fail = m => { throw new Error(m); };
+            const raw = input.replace(/\s/g, '');
+            if (!raw) fail('Nothing entered.');
+            if (raw.length !== TOTAL) fail(`Inappropriate length: expected ${TOTAL} characters, got ${raw.length}.`);
+            const bad = raw.search(/[^0-9A-Za-z]/);
+            if (bad >= 0) fail(`Unexpected character "${raw[bad]}" at position ${bad + 1}.`);
+            if (checksum(raw.slice(0, BODY_END)) !== raw.slice(BODY_END)) fail('Checksum mismatch: the code is mistyped, damaged or forged.');
+            const k = A62.indexOf(raw[KEY_POS]);
+            if (k < 1) fail('Invalid key character.');
+            const body = rot(raw.slice(0, KEY_POS) + raw.slice(KEY_POS + 1, BODY_END), k, true);
+            const f = {}; let o = 0;
+            for (const [n, len] of LAYOUT) { f[n] = body.slice(o, o + len); o += len; }
+        
+            if (!/^[A-Z]$/.test(f.uidL)) fail('User ID letter is not a capital letter.');
+            if (!RE.uidHex.test(f.uidN)) fail('User ID number block contains an unexpected character (letter where a number belongs).');
+            const un = parseInt(f.uidN, 16);
+            if (un < 1 || un > LIMITS.userIdMax) fail(`User ID number is outside 1–${LIMITS.userIdMax}.`);
+            if (!RE.bin.test(f.score)) fail('Score block contains a character that is not a binary digit.');
+            const score = parseInt(f.score, 2);
+            if (score > LIMITS.scoreMax) fail(`Score is above ${LIMITS.scoreMax}.`);
+            if (f.sg1 !== f.sg2) fail('The two sign letters disagree.');
+            if (!/^[pnz]$/.test(f.sg1)) fail('Sign letter must be lowercase p, n or z.');
+            if (f.cl1 !== f.cl2) fail('The two tier letters disagree.');
+            if (!/^[GPSN]$/.test(f.cl1)) fail('Tier letter must be uppercase G, P, S or N.');
+            if ((f.sg1 === 'z') !== (score === 0)) fail('Sign letter does not match the score (z means exactly 0).');
+            if (!/^[A-Za-z][0-9][A-Za-z][0-9]$/.test(f.req)) fail('Request ID is not in letter-number-letter-number format.');
+            if (!RE.f4.test(f.f4) || !RE.l5.test(f.l5)) fail('Issuer name block must be lowercase letters only.');
+            if (!RE.yrHex.test(f.yr)) fail('Birth year block contains an unexpected character.');
+            const year = parseInt(f.yr, 16);
+            if (!/^[0-9A-Z]{5}$/.test(f.dt)) fail('Issue date block contains an unexpected character.');
+            const ds = pad(parseInt(f.dt, 36), 8);
+            if (ds.length !== 8) fail('Issue date is malformed.');
+            const dd = +ds.slice(0, 2), mm = +ds.slice(2, 4), yy = +ds.slice(4);
+            const dt = new Date(yy, mm - 1, dd);
+            if (dt.getFullYear() !== yy || dt.getMonth() !== mm - 1 || dt.getDate() !== dd) fail('Issue date is not a real calendar date.');
+            if (!/^[0-9A-Z]{3}$/.test(f.tm)) fail('Issue time block contains an unexpected character.');
+            const tn = parseInt(f.tm, 36);
+            if (tn > 2359 || tn % 100 > 59) fail('Issue time is outside 0000–2359.');
+        
+            // ---- extra integrity checks ----
+            const tn4 = pad(tn, 4);
+            const issued = new Date(yy, mm - 1, dd, +tn4.slice(0, 2), +tn4.slice(2));
+            if (issued - now > RULES.futureSlackMin * 60000) fail('Issue date/time is in the future.');
+            if (now - issued > RULES.validDays * 86400000) fail(`Coupon expired: it is valid for ${RULES.validDays} days after issue.`);
+            const expectTier = tierFor(f.sg1, score);
+            if (f.cl1 !== expectTier) fail(`Tier ${f.cl1} does not match the score (this score earns tier ${expectTier}).`);
+            if (f.cl1 === 'N') fail('Tier N (Bronze and below) cannot use coupons.');
+            const exp = new Date(issued.getTime() + RULES.validDays * 86400000);
+        
+            return {
+                uid: f.uidL + pad(un, UID_DIGITS), score, sign: f.sg1,
+                signed: f.sg1 === 'n' ? -score : score,
+                cls: f.cl1, req: f.req, f4: f.f4, l5: f.l5, year,
+                date: `${ds.slice(0,2)}/${ds.slice(2,4)}/${ds.slice(4)}`,
+                time: `${pad(tn, 4).slice(0,2)}:${pad(tn, 4).slice(2)}`,
+                issuedMs: issued.getTime(), expiresMs: exp.getTime(),
+                expires: `${pad(exp.getDate(),2)}/${pad(exp.getMonth()+1,2)}/${exp.getFullYear()} ${pad(exp.getHours(),2)}:${pad(exp.getMinutes(),2)}`
+            };
+        }
+        
+        // ---------- integration with the main system ----------
+        const loadLedger = () => ledgerCache;
+        const saveLedger = l => {
+            ledgerCache = l;
+            if (!orgReady) return;
+            const cur = {}; for (const c in l) cur[c] = JSON.stringify(l[c]);
+            const u = pushDiff('ledger', cur, syncedLedger); syncedLedger = cur; cloudWrite(u);
+        };
+        const clean = (v, n) => v.toLowerCase().replace(/[^a-z]/g, '').padEnd(n, 'x').slice(0, n);
+        const stamp = ms => { const d = new Date(ms); return `${pad(d.getDate(),2)}/${pad(d.getMonth()+1,2)}/${d.getFullYear()} ${pad(d.getHours(),2)}:${pad(d.getMinutes(),2)}`; };
+        const err = m => ({ ok: false, error: m });
+        const adminOK = () => (!isGuestSession && loggedInAdminProfile) ? null : 'Guest admins cannot redeem. Log in as a registered admin.';
+        const TIER_BY_LETTER = { S: 'Silver', G: 'Gold', P: 'Platinum' };
+        const LETTER_BY_TIER = { Silver: 'S', Gold: 'G', Platinum: 'P' };
+        const RANK_BY_LETTER = { S: 1, G: 2, P: 3 };
+        const tierRank = pts => pts >= CONFIG.TIERS.PLATINUM ? 3 : pts >= CONFIG.TIERS.GOLD ? 2 : pts >= CONFIG.TIERS.SILVER ? 1 : 0;
+
+        // Perk ID = letter A-D (how many options were picked) + digit (which combination of that size)
+        const comb = (n, k, start = 0, cur = []) => k === 0 ? [cur] :
+            Array.from({ length: n - start }, (_, i) => start + i).flatMap(i => comb(n, k - 1, i + 1, [...cur, i]));
+        const COMBOS = {};
+        for (let k = 1; k <= REDEEM_OPTIONS; k++) COMBOS[k] = comb(REDEEM_OPTIONS, k);
+        const perkId = idx => { const s = [...idx].sort((x, y) => x - y), k = s.length; return String.fromCharCode(64 + k) + (COMBOS[k].findIndex(c => c.join() === s.join()) + 1); };
+        const perkIdx = (letter, digit) => { const c = COMBOS[letter.charCodeAt(0) - 64]; return c ? (c[+digit - 1] || null) : null; };
+        const unitCost = b => b.c || REDEEM_COST;        // points per option for this benefit
+        const usable = b => b.n || REDEEM_OPTIONS;      // options that can be ticked (the rest are greyed out)
+        const perkLabels = b => { const base = b.o || REDEEM_PERKS[b.l] || []; return Array.from({ length: REDEEM_OPTIONS }, (_, i) => base[i] || `Option ${i + 1}`); };
+
+        // Read the 4-char coupon ID back into tier / benefit / perks (null if it points at nothing real)
+        function parseReq(req) {
+            const m = /^([SGP])([1-9])([A-Z])([0-9])$/.exec(req);
+            if (!m) return null;
+            const tier = TIER_BY_LETTER[m[1]], benefit = (REDEEM_LISTS[tier] || [])[+m[2] - 1], idx = perkIdx(m[3], m[4]);
+            return benefit && idx ? { tier, letter: m[1], benefit, benefitNo: +m[2], idx } : null;
+        }
+
+        // Pay points and issue a coupon. Issuer = logged-in admin, time = system clock,
+        // user ID / score / sign / tier = the student's record. One benefit per call, any of its options.
+        // What the student has already redeemed since the latest "Monthly Reset" (history from that marker up to the newest entry).
+        // Returns { 'S2': Set(option indexes used), ... }. Coupons that expired unused were refunded, so they do not count.
+        function usedThisPeriod(s) {
+            const hist = (s && s.history) || [];
+            let start = 0;
+            for (let i = hist.length - 1; i >= 0; i--) if (hist[i].reason === 'Monthly Reset') { start = i + 1; break; }
+            const recent = hist.slice(start);
+            const refunded = new Set(recent.filter(h => h.refundOf).map(h => h.refundOf));
+            const refundedReq = {};   // older refund rows carry no link, only the coupon ID in their text
+            recent.forEach(h => { const r = !h.refundOf && /^↩ Coupon (\S+) expired - refund$/.exec(h.reason || ''); if (r) refundedReq[r[1]] = (refundedReq[r[1]] || 0) + 1; });
+            const used = {};
+            recent.forEach(h => {
+                const m = h.cid && /^Redeem ([A-Z])([1-9])([A-Z])([0-9])$/.exec(h.reason || '');
+                if (!m || refunded.has(h.cid)) return;
+                const req = m[1] + m[2] + m[3] + m[4];
+                if (refundedReq[req] > 0) { refundedReq[req]--; return; }
+                const idx = perkIdx(m[3], m[4]); if (!idx) return;
+                const key = m[1] + m[2];
+                used[key] = used[key] || new Set();
+                idx.forEach(i => used[key].add(i));
+            });
+            return used;
+        }
+
+        function redeemBenefit(studentId, tierName, benefitNo, optIdx) {
+            const e0 = adminOK(); if (e0) return err(e0);
+            sweep();
+            const s = students.find(x => x.id === studentId);
+            if (!s) return err('Student not found.');
+            const rank = tierRank(s.points);
+            if (rank < 1) return err('Students in Bronze tier or below cannot redeem.');
+            const letter = LETTER_BY_TIER[tierName];
+            if (!letter) return err('Unknown tier.');
+            if (REDEEM_TIER_RANK[tierName] > rank) return err('A student cannot use benefits of a higher tier.');
+            const b = (REDEEM_LISTS[tierName] || [])[benefitNo - 1];
+            if (!b || benefitNo > 9) return err('Unknown benefit.');
+            const idx = b.all ? Array.from({ length: usable(b) }, (_, i) => i)      // compulsory benefit: always all options
+                              : [...new Set(optIdx)].filter(i => Number.isInteger(i) && i >= 0 && i < usable(b)).sort((x, y) => x - y);
+            if (!idx.length) return err('Select at least one option.');
+            // each option (and each whole benefit) can be redeemed only once per monthly period
+            const spent = usedThisPeriod(s)[letter + benefitNo] || new Set();
+            if (b.all && spent.size) return err('This benefit was already redeemed this month. It is available again after the next monthly reset.');
+            const again = idx.filter(i => spent.has(i));
+            if (again.length) return err(`Already redeemed this month: ${again.map(i => perkLabels(b)[i]).join(', ')}. Available again after the next monthly reset.`);
+            const cost = unitCost(b) * idx.length, pts = Math.round(s.points);
+            if (pts < cost) return err(`Not enough points: this needs ${cost}, the student has ${pts}.`);
+            if (!RE.uid.test(s.id) || +s.id.slice(1) < 1) return err(`Student ID "${s.id}" is not in coupon format (one capital letter + ${UID_DIGITS} digits, number 1 or higher).`);
+            if (pts > LIMITS.scoreMax) return err(`Score ${pts} is above the coupon limit of ${LIMITS.scoreMax}.`);
+            const year = parseInt(loggedInAdminProfile.year, 10);
+            if (!Number.isInteger(year) || year < 0 || year > 4095) return err('The logged-in admin\'s birth year cannot be stored in a coupon.');
+            const ledger = loadLedger(), now = new Date(), req = letter + benefitNo + perkId(idx);
+            let code = null, info = null;
+            try {
+                for (let t = 0; t < 20 && !code; t++) {
+                    const c = makeCode({
+                        uid: s.id, score: pts, sign: 'p', cls: tierFor('p', pts), req, year,
+                        f4: clean(loggedInAdminProfile.fname, LIMITS.firstNameLen), l5: clean(loggedInAdminProfile.lname, LIMITS.lastNameLen),
+                        date: pad(now.getDate(), 2) + pad(now.getMonth() + 1, 2) + now.getFullYear(),
+                        time: pad(now.getHours(), 2) + pad(now.getMinutes(), 2)
+                    });
+                    if (!ledger[c]) code = c;
+                }
+                if (!code) return err('Could not create a unique code, please try again.');
+                info = decode(code);
+            } catch (e) { return err(e.message); }
+            const perks = b.all ? ['Whole benefit'] : idx.map(i => perkLabels(b)[i]);
+            const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+            addHistory(s, -cost, `Redeem ${req}`);
+            s.history[s.history.length - 1].cid = cid;
+            save();
+            ledger[code] = { uid: s.id, req, cid, score: pts, tier: tierName, benefit: b.l, perks, cost, issuedMs: info.issuedMs, expiresMs: info.expiresMs,
+                             issuer: `${loggedInAdminProfile.fname} ${loggedInAdminProfile.lname}`, usedMs: null, usedBy: null };
+            saveLedger(ledger);
+            return { ok: true, code, info, cost, req, benefit: b.l, perks, balance: s.points };
+        }
+
+        // Read a code without using it: format, checksum, field rules, then coupon-ID rules
+        function inspect(code) {
+            try {
+                const d = decode(String(code).replace(/\s/g, ''));
+                const p = parseReq(d.req);
+                if (!p) return err('Coupon ID does not point to a real benefit and perk.');
+                if (p.idx.some(i => i >= usable(p.benefit))) return err('Coupon ID uses an option that this benefit does not offer.');
+                if (p.benefit.all && p.idx.length !== usable(p.benefit)) return err('Coupon ID does not match the compulsory options of this benefit.');
+                if (RANK_BY_LETTER[p.letter] > RANK_BY_LETTER[d.cls]) return err('Coupon ID is for a higher tier than the student\'s tier.');
+                return { ok: true, data: d, parsed: p };
+            } catch (e) { return err(e.message); }
+        }
+
+        // Use up a code (ReC). Fails if invalid, expired, unknown, already used, or the student is gone.
+        function redeemCode(code) {
+            const e0 = adminOK(); if (e0) return err(e0);
+            sweep();
+            const key = String(code).replace(/\s/g, '');
+            const r = inspect(key); if (!r.ok) return r;
+            const d = r.data, ledger = loadLedger(), rec = ledger[key];
+            if (!rec) return err('This code was not issued by this system, or it has been wiped.');
+            if (rec.uid !== d.uid || rec.req !== d.req) return err('The code does not match its issue record.');
+            if (rec.usedMs) return err(`Already redeemed on ${stamp(rec.usedMs)}${rec.usedBy ? ' by ' + rec.usedBy : ''}.`);
+            if (!students.find(x => x.id === d.uid)) return err('The student this coupon was issued to no longer exists.');
+            // History check: the redeem entry written when the coupon was issued must show -cost, and
+            // balance-after + cost must equal the score printed in the coupon, at the coupon's own tier and a positive sign.
+            // (Later score changes and monthly resets do not matter.)
+            const s = students.find(x => x.id === d.uid);
+            const h = (s.history || []).find(x => x.cid && x.cid === rec.cid);
+            if (!h) return err('No history record of this coupon was found for the student.');
+            if (d.sign !== 'p') return err('Coupon score must carry a positive sign.');
+            if (rec.cost !== unitCost(r.parsed.benefit) * r.parsed.idx.length) return err('Coupon cost does not match the options in its coupon ID.');
+            if (h.change !== -rec.cost) return err(`History shows ${h.change} points for this coupon, expected -${rec.cost}.`);
+            if (h.totalAfter + rec.cost !== d.score || rec.score !== d.score) return err(`History balance ${h.totalAfter} + ${rec.cost} = ${h.totalAfter + rec.cost} does not match the coupon's score ${d.score}.`);
+            if (tierFor('p', d.score) !== d.cls) return err('The coupon score does not match its tier.');
+            rec.usedMs = Date.now(); rec.usedBy = loggedInAdmin;
+            saveLedger(ledger);
+            return { ok: true, uid: d.uid, req: d.req, tier: rec.tier, benefit: rec.benefit, perks: rec.perks, cost: rec.cost, issuer: rec.issuer, issued: `${d.date} at ${d.time}` };
+        }
+
+        // Wipe codes older than RULES.validDays; refund the points of any that were never used
+        function sweep() {
+            if (!orgReady) return 0;
+            const ledger = loadLedger(), now = Date.now();
+            let changed = false, refunded = 0;
+            for (const c in ledger) {
+                const r = ledger[c];
+                if (r.expiresMs > now) continue;
+                const s = !r.usedMs && students.find(x => x.id === r.uid && !(x.history || []).some(h => h.refundOf === r.cid));
+                if (s) {
+                    s.points += r.cost;
+                    (s.history = s.history || []).push({ date: getFormattedDate(), ts: Date.now(), reason: `↩ Coupon ${r.req} expired - refund`, change: r.cost, totalAfter: s.points, admin: 'System', refundOf: r.cid });
+                    refunded++;
+                }
+                delete ledger[c]; changed = true;
+            }
+            if (changed) saveLedger(ledger);
+            if (refunded) save();
+            return refunded;
+        }
+
+        return { redeemBenefit, redeemCode, inspect, sweep, usedThisPeriod, tierRank, perkId, perkLabels, unitCost, usable, LETTER_BY_TIER, LIMITS, RULES, loadLedger, saveLedger };
+        })();
+
+        // --- QR CODE ENCODER (byte mode, error correction level M, versions 1-10 = up to 213 characters) ---
+        const QR = (function () {
+            const ECC_PER_BLOCK = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26];   // error-correction codewords per block, by version
+            const NUM_BLOCKS    = [0,  1,  1,  1,  2,  2,  4,  4,  4,  5,  5];   // number of blocks, by version
+            const MAX_VERSION = 10;
+
+            function rawModules(ver) {
+                let n = (16 * ver + 128) * ver + 64;
+                if (ver >= 2) { const na = Math.floor(ver / 7) + 2; n -= (25 * na - 10) * na - 55; if (ver >= 7) n -= 36; }
+                return n;
+            }
+            function gfMul(x, y) { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; }
+            function rsDivisor(degree) {
+                const r = []; for (let i = 0; i < degree - 1; i++) r.push(0); r.push(1);
+                let root = 1;
+                for (let i = 0; i < degree; i++) {
+                    for (let j = 0; j < r.length; j++) { r[j] = gfMul(r[j], root); if (j + 1 < r.length) r[j] ^= r[j + 1]; }
+                    root = gfMul(root, 2);
+                }
+                return r;
+            }
+            function rsRemainder(data, divisor) {
+                const r = divisor.map(() => 0);
+                for (const b of data) { const f = b ^ r.shift(); r.push(0); divisor.forEach((c, i) => { r[i] ^= gfMul(c, f); }); }
+                return r;
+            }
+
+            function encode(text) {
+                const bytes = Array.from(new TextEncoder().encode(String(text)));
+                let ver = 0, dataCw = 0;
+                for (let v = 1; v <= MAX_VERSION; v++) {
+                    const dcw = Math.floor(rawModules(v) / 8) - ECC_PER_BLOCK[v] * NUM_BLOCKS[v];
+                    if (4 + (v < 10 ? 8 : 16) + 8 * bytes.length <= dcw * 8) { ver = v; dataCw = dcw; break; }
+                }
+                if (!ver) throw new Error('The code is too long for a QR code.');
+
+                // data bits: mode (byte), length, bytes, terminator, padding
+                const bits = [];
+                const put = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+                put(0x4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+                put(0, Math.min(4, dataCw * 8 - bits.length));
+                put(0, (8 - bits.length % 8) % 8);
+                for (let pad = 0xEC; bits.length < dataCw * 8; pad ^= 0xEC ^ 0x11) put(pad, 8);
+                const data = [];
+                for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let k = 0; k < 8; k++) b = (b << 1) | bits[i + k]; data.push(b); }
+
+                // error correction + interleaving
+                const nb = NUM_BLOCKS[ver], eccLen = ECC_PER_BLOCK[ver], total = Math.floor(rawModules(ver) / 8);
+                const numShort = nb - total % nb, shortLen = Math.floor(total / nb);
+                const div = rsDivisor(eccLen), blocks = [];
+                for (let i = 0, k = 0; i < nb; i++) {
+                    const dat = data.slice(k, k + shortLen - eccLen + (i < numShort ? 0 : 1)); k += dat.length;
+                    const ecc = rsRemainder(dat, div);
+                    if (i < numShort) dat.push(0);
+                    blocks.push(dat.concat(ecc));
+                }
+                const all = [];
+                for (let i = 0; i < blocks[0].length; i++) blocks.forEach((blk, j) => { if (i !== shortLen - eccLen || j >= numShort) all.push(blk[i]); });
+
+                // module grid
+                const size = ver * 4 + 17;
+                const mod = Array.from({ length: size }, () => new Array(size).fill(false));
+                const fn = Array.from({ length: size }, () => new Array(size).fill(false));
+                const setF = (x, y, dark) => { mod[y][x] = dark; fn[y][x] = true; };
+                const bit = (v, i) => ((v >>> i) & 1) !== 0;
+
+                function finder(cx, cy) {
+                    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+                        const d = Math.max(Math.abs(dx), Math.abs(dy)), x = cx + dx, y = cy + dy;
+                        if (x >= 0 && x < size && y >= 0 && y < size) setF(x, y, d !== 2 && d !== 4);
+                    }
+                }
+                function alignment(cx, cy) {
+                    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setF(cx + dx, cy + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+                }
+                function drawFormat(mask) {                    // level M has format bits 00
+                    const d = (0 << 3) | mask;
+                    let rem = d; for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+                    const bits15 = ((d << 10) | rem) ^ 0x5412;
+                    for (let i = 0; i <= 5; i++) setF(8, i, bit(bits15, i));
+                    setF(8, 7, bit(bits15, 6)); setF(8, 8, bit(bits15, 7)); setF(7, 8, bit(bits15, 8));
+                    for (let i = 9; i < 15; i++) setF(14 - i, 8, bit(bits15, i));
+                    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, bit(bits15, i));
+                    for (let i = 8; i < 15; i++) setF(8, size - 15 + i, bit(bits15, i));
+                    setF(8, size - 8, true);                   // the always-dark module
+                }
+                function drawVersion() {
+                    if (ver < 7) return;
+                    let rem = ver; for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+                    const bits18 = (ver << 12) | rem;
+                    for (let i = 0; i < 18; i++) { const c = bit(bits18, i), a = size - 11 + i % 3, b = Math.floor(i / 3); setF(a, b, c); setF(b, a, c); }
+                }
+
+                for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }   // timing patterns
+                finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+                const pos = [6];
+                if (ver > 1) {
+                    const na = Math.floor(ver / 7) + 2;
+                    const step = (ver === 32) ? 26 : Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2;
+                    for (let p = size - 7; pos.length < na; p -= step) pos.splice(1, 0, p);
+                    for (let i = 0; i < na; i++) for (let j = 0; j < na; j++) {
+                        if (!((i === 0 && j === 0) || (i === 0 && j === na - 1) || (i === na - 1 && j === 0))) alignment(pos[i], pos[j]);
+                    }
+                }
+                drawFormat(0); drawVersion();
+
+                // place the data bits in the zig-zag order
+                let bi = 0;
+                for (let right = size - 1; right >= 1; right -= 2) {
+                    if (right === 6) right = 5;
+                    for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+                        const x = right - j, upward = ((right + 1) & 2) === 0, y = upward ? size - 1 - vert : vert;
+                        if (!fn[y][x] && bi < all.length * 8) { mod[y][x] = bit(all[bi >>> 3], 7 - (bi & 7)); bi++; }
+                    }
+                }
+
+                function applyMask(m) {
+                    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+                        let inv;
+                        switch (m) {
+                            case 0: inv = (x + y) % 2 === 0; break;
+                            case 1: inv = y % 2 === 0; break;
+                            case 2: inv = x % 3 === 0; break;
+                            case 3: inv = (x + y) % 3 === 0; break;
+                            case 4: inv = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; break;
+                            case 5: inv = x * y % 2 + x * y % 3 === 0; break;
+                            case 6: inv = (x * y % 2 + x * y % 3) % 2 === 0; break;
+                            default: inv = ((x + y) % 2 + x * y % 3) % 2 === 0;
+                        }
+                        if (!fn[y][x] && inv) mod[y][x] = !mod[y][x];
+                    }
+                }
+                function penalty() {
+                    let result = 0;
+                    const lines = [];
+                    for (let y = 0; y < size; y++) lines.push(mod[y]);
+                    for (let x = 0; x < size; x++) lines.push(mod.map(r => r[x]));
+                    for (const line of lines) {
+                        let run = 1;
+                        for (let i = 1; i < size; i++) {
+                            if (line[i] === line[i - 1]) { run++; if (run === 5) result += 3; else if (run > 5) result++; } else run = 1;
+                        }
+                        const s = line.map(v => (v ? '1' : '0')).join('');
+                        for (const pat of ['10111010000', '00001011101']) { let k = s.indexOf(pat); while (k !== -1) { result += 40; k = s.indexOf(pat, k + 1); } }
+                    }
+                    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) {
+                        const c = mod[y][x];
+                        if (c === mod[y][x + 1] && c === mod[y + 1][x] && c === mod[y + 1][x + 1]) result += 3;
+                    }
+                    let dark = 0; mod.forEach(r => r.forEach(v => { if (v) dark++; }));
+                    const tot = size * size;
+                    return result + (Math.ceil(Math.abs(dark * 20 - tot * 10) / tot) - 1) * 10;
+                }
+
+                let best = 0, bestPen = Infinity;
+                for (let m = 0; m < 8; m++) {
+                    applyMask(m); drawFormat(m);
+                    const p = penalty();
+                    if (p < bestPen) { bestPen = p; best = m; }
+                    applyMask(m);
+                }
+                applyMask(best); drawFormat(best);
+                return { size, version: ver, mask: best, get: (x, y) => mod[y][x] };
+            }
+            return { encode };
+        })();
+
+        // --- REDEEM / REC UI ---
+        const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const RD = { tier: null, no: 0, picked: new Set() };
+        const rdBody = () => document.getElementById('redeem-body');
+        const rdStudent = () => students.find(x => x.id === activeID);
+        const TIER_ORDER = ['Silver', 'Gold', 'Platinum'];
+        const BTN_GHOST = 'px-4 py-2 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700 text-[10px] font-black uppercase tracking-widest transition';
+
+        function setRedeemSub() {
+            const s = rdStudent();
+            document.getElementById('redeem-sub').textContent = s ? `${s.id} · ${s.points} 🪙 · ${getTierTextOnly(s.points).replace(/^- /, '')}` : '';
+        }
+
+        function openRedeem() {
+            const s = rdStudent(); if (!s) return;
+            if (isGuestSession || !loggedInAdminProfile) return alert('Guest admins cannot redeem. Log in as a registered admin.');
+            Coupons.sweep();
+            if (Coupons.tierRank(s.points) < 1) return alert('Students in Bronze tier or below cannot redeem.');
+            RD.tier = null; RD.no = 0; RD.picked = new Set();
+            document.getElementById('redeem-modal').classList.remove('hidden');
+            renderRedeemTiers();
+        }
+        // --- keyboard: same conventions as the search boxes (arrows move a highlight, Enter acts, cursor lands in the menu) ---
+        RD.nav = -1;
+        function rdItems() { return [...document.querySelectorAll('#redeem-body .rd-nav')]; }
+        function rdHighlight(i) {
+            const items = rdItems(); RD.nav = items.length ? Math.max(-1, Math.min(i, items.length - 1)) : -1;
+            items.forEach((el, k) => { el.classList.toggle('rd-active', k === RD.nav); if (k === RD.nav) el.scrollIntoView({ block: 'nearest' }); });
+        }
+        function rdReady() { RD.nav = -1; rdHighlight(-1); rdBody().focus({ preventScroll: true }); }
+        document.addEventListener('keydown', e => {
+            const recOK = document.getElementById('rec-success-modal'), rec = document.getElementById('rec-modal'), red = document.getElementById('redeem-modal');
+            if (!document.getElementById('qr-modal').classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeQR(); } return; }   // QR window on top: only it reacts
+            if (!recOK.classList.contains('hidden')) {                       // success popup: Enter / Space / Esc = OK
+                if (e.repeat || e.target.id === 'rec-input') return;      // ignore the Enter that just submitted the code
+                if (['Enter', ' ', 'Escape'].includes(e.key)) { e.preventDefault(); closeRecSuccess(); }
+                return;
+            }
+            if (!rec.classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeRec(); } return; }
+            if (red.classList.contains('hidden')) return;
+            const tag = e.target.tagName;
+            if (e.key === 'Escape') { e.preventDefault(); return closeRedeem(); }
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            const items = rdItems();
+            if (e.key === 'ArrowDown') { e.preventDefault(); rdHighlight(RD.nav + 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); rdHighlight(RD.nav - 1); }
+            else if ((e.key === 'ArrowLeft' || e.key === 'Backspace') && RD.tier && document.getElementById('redeem-code') === null) { e.preventDefault(); renderRedeemTiers(); }
+            else if ((e.key === 'Enter' || (e.key === ' ' && tag !== 'BUTTON')) && items.length && tag !== 'BUTTON') {
+                e.preventDefault();
+                const el = items[RD.nav >= 0 ? RD.nav : 0];
+                if (el.tagName === 'BUTTON' && el.disabled) return;
+                el.click();
+            }
+        });
+
+        function closeRedeem() { document.getElementById('redeem-modal').classList.add('hidden'); closeQR(); }
+
+        function renderRedeemTiers() {
+            const s = rdStudent(); if (!s) return closeRedeem();
+            const rank = Coupons.tierRank(s.points), usedNow = Coupons.usedThisPeriod(s);
+            setRedeemSub();
+            let h = `<p class="text-xs font-bold text-stone-500 dark:text-stone-400">Choose ONE benefit. Prices are shown on the next screen. Higher-tier benefits are locked.</p>`;
+            TIER_ORDER.forEach(t => {
+                const open = REDEEM_TIER_RANK[t] <= rank, L = Coupons.LETTER_BY_TIER[t];
+                h += `<h4 class="mt-5 mb-1 text-sm font-black uppercase tracking-widest text-maroon dark:text-amber-500">${REDEEM_TIER_EMOJI[t]} ${t} ${open ? '' : '🔒 locked'}</h4>
+                <div class="overflow-x-auto"><table class="w-full text-left text-sm border-collapse"><thead><tr class="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400"><th class="p-2 w-14">ID</th><th class="p-2">Benefit</th><th class="p-2">Description</th></tr></thead><tbody>`;
+                REDEEM_LISTS[t].forEach((b, i) => {
+                    const sp = usedNow[L + (i + 1)], gone = !!sp && [...sp].filter(k => k < Coupons.usable(b)).length >= Coupons.usable(b);   // nothing left this month
+                    const can = open && !gone;
+                    h += `<tr ${can ? `onclick="pickBenefit('${t}', ${i + 1})"` : ''} class="${can ? 'rd-nav ' : ''}border-t border-orange-200 dark:border-stone-700 ${can ? 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/40' : 'opacity-40'}">
+                        <td class="p-2 font-mono font-black">${L}${i + 1}</td><td class="p-2 font-bold">${esc(b.l)}</td><td class="p-2 text-xs">${esc(b.d)}${gone ? ' <span class="font-black text-red-600 dark:text-red-400">Used this month</span>' : ''}</td></tr>`;
+                });
+                h += '</tbody></table></div>';
+            });
+            rdBody().innerHTML = h; rdReady();
+        }
+
+        function pickBenefit(tier, no) { RD.tier = tier; RD.no = no; RD.picked = REDEEM_LISTS[tier][no - 1].all ? new Set(Array.from({ length: Coupons.usable(REDEEM_LISTS[tier][no - 1]) }, (_, i) => i)) : new Set(); renderRedeemOptions(); }
+        function togglePerk(i) { { const bb = REDEEM_LISTS[RD.tier][RD.no - 1]; if (bb.all || i >= Coupons.usable(bb) || (Coupons.usedThisPeriod(rdStudent())[Coupons.LETTER_BY_TIER[RD.tier] + RD.no] || new Set()).has(i)) return; } RD.picked.has(i) ? RD.picked.delete(i) : RD.picked.add(i); const keep = RD.nav; renderRedeemOptions(); rdHighlight(keep); }
+        function toggleAllPerks() {
+            const bb = REDEEM_LISTS[RD.tier][RD.no - 1], u = Coupons.usable(bb);
+            const spent = Coupons.usedThisPeriod(rdStudent())[Coupons.LETTER_BY_TIER[RD.tier] + RD.no] || new Set();
+            const avail = Array.from({ length: u }, (_, i) => i).filter(i => !spent.has(i));   // options not yet used this month
+            if (bb.all) return;
+            RD.picked = RD.picked.size === avail.length ? new Set() : new Set(avail);
+            renderRedeemOptions();
+        }
+
+        function renderRedeemOptions() {
+            const s = rdStudent(); if (!s) return closeRedeem();
+            const b = REDEEM_LISTS[RD.tier][RD.no - 1], L = Coupons.LETTER_BY_TIER[RD.tier], labels = Coupons.perkLabels(b);
+            const unit = Coupons.unitCost(b), usable = Coupons.usable(b);
+            const usedSet = Coupons.usedThisPeriod(s)[L + RD.no] || new Set(), avail = usable - [...usedSet].filter(k => k < usable).length;
+            const n = RD.picked.size, cost = unit * n, after = s.points - cost, ok = n > 0 && after >= 0;
+            const id = L + RD.no + (n ? Coupons.perkId([...RD.picked]) : '··');
+            const fixed = !!b.all;   // compulsory benefit: every option is ticked and locked
+            let h = `<button onclick="renderRedeemTiers()" class="${BTN_GHOST}">← Back <span class="opacity-60">(←)</span></button>
+                <h4 class="mt-4 text-lg font-black text-maroon dark:text-amber-500">${esc(b.l)} <span class="font-mono text-sm text-blue-700 dark:text-blue-400">${id}</span></h4>
+                <p class="text-xs text-stone-500 dark:text-stone-400">${esc(b.d)}</p>
+                <p class="text-xs font-bold text-blue-700 dark:text-blue-400 mb-3">${fixed ? `This benefit has no choices: all ${usable} options are compulsory · ${unit * usable} 🪙 in total.` : `Pick at least 1 and up to ${usable} option${usable > 1 ? 's' : ''} · ${unit} 🪙 each (max ${unit * usable} 🪙).`}</p>
+                ${usedSet.size ? '<p class="text-xs font-bold text-red-600 dark:text-red-400 mb-3">Greyed "Used" options were already redeemed this month. They return after the next monthly reset.</p>' : ''}
+                <table class="w-full text-left text-sm border-collapse"><thead><tr class="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400"><th class="p-2 w-10"></th><th class="p-2">Option</th><th class="p-2 text-right">Cost</th></tr></thead><tbody>`;
+            labels.forEach((lab, i) => {
+                const off = i >= usable, spent = usedSet.has(i), lock = fixed || off || spent;   // greyed out: not offered, compulsory, or already used this month
+                h += `<tr ${lock ? '' : `onclick="togglePerk(${i})"`} class="${lock ? '' : 'rd-nav cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/40'} ${off || spent ? 'opacity-40' : ''} border-t border-orange-200 dark:border-stone-700">
+                    <td class="p-2"><input type="checkbox" ${RD.picked.has(i) ? 'checked' : ''} ${lock ? 'disabled' : ''} class="pointer-events-none w-4 h-4"></td>
+                    <td class="p-2 font-bold">${esc(lab)}</td><td class="p-2 text-right font-black">${off ? '—' : spent ? 'Used' : unit + ' 🪙'}</td></tr>`;
+            });
+            h += `</tbody></table>
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    ${fixed ? '<span></span>' : `<button onclick="toggleAllPerks()" class="${BTN_GHOST}">${n === avail ? 'Clear all' : 'Select all'}</button>`}
+                    <p class="text-sm font-black">${n} selected · Cost <span class="text-red-600 dark:text-red-400">${cost}</span> 🪙 · Balance after <span class="${after < 0 ? 'text-red-600 dark:text-red-400' : ''}">${after}</span> 🪙</p>
+                </div>
+                <p id="redeem-err" class="mt-3 min-h-[1.25rem] text-sm font-bold text-red-600 dark:text-red-400">${n && after < 0 ? 'Not enough points for this selection.' : ''}</p>
+                <button onclick="confirmRedeem()" ${ok ? '' : 'disabled'} class="rd-nav mt-2 w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest border-b-4 border-blue-950 shadow-lg ${ok ? '' : 'opacity-40 cursor-not-allowed'}">🎁 Redeem for ${cost} 🪙</button>`;
+            rdBody().innerHTML = h; rdReady();
+        }
+
+        function confirmRedeem() {
+            const r = Coupons.redeemBenefit(activeID, RD.tier, RD.no, [...RD.picked]);
+            if (!r.ok) { document.getElementById('redeem-err').textContent = r.error; return; }
+            updatePanel(); setRedeemSub();
+            RD.last = r;   // used by the QR code button
+            rdBody().innerHTML = `<div class="text-center">
+                <p class="text-green-700 dark:text-green-400 font-black uppercase tracking-widest mb-1">Coupon issued</p>
+                <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">${esc(r.benefit)} · ID ${esc(r.req)} · ${r.cost} 🪙 paid · balance ${r.balance} 🪙</p>
+                <div id="redeem-code" class="break-all select-all font-mono text-lg font-black bg-stone-100 dark:bg-stone-800 text-maroon dark:text-amber-400 p-4 rounded-2xl border-2 border-amber-300 dark:border-stone-600">${esc(r.code)}</div>
+                <ul class="mt-3 text-sm font-bold text-left list-disc pl-6">${r.perks.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+                <p class="mt-3 text-xs text-stone-500 dark:text-stone-400">Valid until ${esc(r.info.expires)}. After that the code is wiped and unused points are refunded.</p>
+                <p class="mt-3 text-sm text-stone-500 dark:text-stone-400">Code is copied to Clipboard!, Click the button below to copy again.</p>
+				<p id="redeem-qr-msg" class="mt-2 min-h-[1rem] text-xs font-bold text-red-600 dark:text-red-400"></p>
+				<div class="mt-4 flex gap-3">
+                    <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">Copy code</button>
+                    <button onclick="showCouponQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">QR code</button>
+                    <button id="redeem-done" onclick="closeRedeem()" class="flex-1 ${BTN_GHOST}">Done</button>
+                </div></div>`;
+            rdReady(); document.getElementById('redeem-done').focus(); 
+			navigator.clipboard && navigator.clipboard.writeText(document.getElementById('redeem-code').textContent);
+        }
+        // Printable PNG: QR code on white, a short caption (student, benefit, expiry) and the code as text underneath
+        function buildQRCanvas(r) {
+            const qr = QR.encode(r.code);
+            const quiet = 4, mods = qr.size + quiet * 2, scale = Math.max(6, Math.ceil(560 / mods)), qrPx = mods * scale;
+            const W = Math.max(qrPx + 40, 640), pad = 20, maxW = W - pad * 2;
+            const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+            const wrap = (text, font, width) => {          // split text into lines that fit the width
+                ctx.font = font; const out = []; let line = '';
+                for (const word of String(text).split(' ')) {
+                    const t = line ? line + ' ' + word : word;
+                    if (ctx.measureText(t).width <= width) { line = t; continue; }
+                    if (line) out.push(line);
+                    let chunk = '';                          // a word wider than the line (the code itself) is broken by characters
+                    for (const ch of word) { if (ctx.measureText(chunk + ch).width > width) { out.push(chunk); chunk = ch; } else chunk += ch; }
+                    line = chunk;
+                }
+                if (line) out.push(line);
+                return out;
+            };
+            const blocks = [
+                { lines: [`${r.benefit} · ${r.req}`], font: 'bold 22px sans-serif', lh: 30 },
+                { lines: [`Student ${r.info.uid}`], font: '20px sans-serif', lh: 28 },
+                { lines: [`Valid until ${r.info.expires}`], font: '20px sans-serif', lh: 28 },
+                { lines: wrap(r.code, '16px monospace', maxW), font: '16px monospace', lh: 22, gap: 12 }
+            ];
+            blocks[0].lines = wrap(blocks[0].lines[0], blocks[0].font, maxW);
+            const textH = blocks.reduce((h, b) => h + b.lines.length * b.lh + (b.gap || 0), 0);
+            canvas.width = W; canvas.height = pad + 40 + qrPx + 8 + textH + pad;
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.font = 'bold 30px sans-serif'; ctx.fillText('COUPON', W / 2, pad);
+            const ox = Math.round((W - qrPx) / 2), oy = pad + 40;
+            for (let y = 0; y < qr.size; y++) for (let x = 0; x < qr.size; x++) {
+                if (qr.get(x, y)) ctx.fillRect(ox + (x + quiet) * scale, oy + (y + quiet) * scale, scale, scale);
+            }
+            let ty = oy + qrPx + 8;
+            blocks.forEach(b => { ty += b.gap || 0; ctx.font = b.font; b.lines.forEach(l => { ctx.fillText(l, W / 2, ty); ty += b.lh; }); });
+            return canvas;
+        }
+
+        function showCouponQR() {
+            const msg = document.getElementById('redeem-qr-msg'); if (msg) msg.textContent = '';
+            if (!RD.last) return;
+            try {
+                RD.qrCanvas = buildQRCanvas(RD.last);
+                document.getElementById('qr-img').src = RD.qrCanvas.toDataURL('image/png');
+            } catch (e) { if (msg) msg.textContent = 'Could not create the QR code: ' + e.message; return; }
+            document.getElementById('qr-modal').classList.remove('hidden');
+            downloadQR();                                    // the printable PNG is saved straight away
+            setTimeout(() => document.getElementById('qr-close').focus(), 50);
+        }
+        function downloadQR() {
+            if (!RD.last || !RD.qrCanvas) return;
+            const name = `PointSystem-Coupon_${String(RD.last.info.uid).replace(/[^\w-]/g, '_')}_${RD.last.req}.png`;
+            RD.qrCanvas.toBlob(blob => {
+                if (!blob) return;
+                const url = URL.createObjectURL(blob), a = document.createElement('a');
+                a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }, 'image/png');
+        }
+        function closeQR() {
+            const q = document.getElementById('qr-modal'); if (q.classList.contains('hidden')) return;
+            q.classList.add('hidden');
+            const d = document.getElementById('redeem-done');
+            if (d && !document.getElementById('redeem-modal').classList.contains('hidden')) d.focus();
+        }
+
+        function copyRedeemCode() { navigator.clipboard && navigator.clipboard.writeText(document.getElementById('redeem-code').textContent); alert("Copied to Clipboard!")}
+
+        function openRec() {
+            document.getElementById('rec-error').textContent = '';
+            document.getElementById('rec-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('rec-input').focus(), 50);
+        }
+        function closeRec() { document.getElementById('rec-modal').classList.add('hidden'); if (!activeID) setTimeout(() => document.getElementById('admin-search-input').focus(), 50); }
+        function closeRecSuccess() { document.getElementById('rec-success-modal').classList.add('hidden'); if (!activeID) setTimeout(() => document.getElementById('admin-search-input').focus(), 50); }
+        function submitRec() {
+            const input = document.getElementById('rec-input'), errEl = document.getElementById('rec-error');
+            const r = Coupons.redeemCode(input.value);
+            if (!r.ok) { errEl.textContent = r.error; input.focus(); input.select(); return; }   // invalid: text only, no popup
+            errEl.textContent = ''; input.value = '';
+            document.getElementById('rec-modal').classList.add('hidden');   // close the ReC window behind the popup
+            document.getElementById('rec-success-body').innerHTML = `
+                <p class="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">Student</p><p class="font-mono font-black text-lg">${esc(r.uid)}</p>
+                <p class="mt-3 text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">Benefit</p>
+                <p class="font-black">${REDEEM_TIER_EMOJI[r.tier] || ''} ${esc(r.benefit)} <span class="font-mono text-sm text-blue-700 dark:text-blue-400">${esc(r.req)}</span></p>
+                <ul class="mt-1 text-sm font-bold list-disc pl-6">${r.perks.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+                <p class="mt-3 text-xs text-stone-500 dark:text-stone-400">Issued ${esc(r.issued)} by ${esc(r.issuer)} · ${r.cost} 🪙 paid</p>`;
+            document.getElementById('rec-success-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('rec-ok').focus(), 120);   // after the Enter key has fully finished
+        }
+
+        // --- THEME & INIT ---
+        let isDarkMode = false;
+        function applyTheme() {
+            const body = document.getElementById('main-body');
+            const sun = document.getElementById('theme-icon-sun');
+            const moon = document.getElementById('theme-icon-moon');
+            document.documentElement.classList.toggle('dark', isDarkMode);
+            if (isDarkMode) {
+                body.classList.add('dark');
+                body.style.backgroundColor = "#1c1917"; 
+                sun.classList.remove('hidden'); moon.classList.add('hidden');
+            } else {
+                body.classList.remove('dark');
+                body.style.backgroundColor = "#fff7ed"; 
+                sun.classList.add('hidden'); moon.classList.remove('hidden');
+            }
+            if(chartInstance) updateChartTheme();
+        }
+        function toggleTheme() { isDarkMode = !isDarkMode; applyTheme(); dbSet('darkMode', isDarkMode); }
+
+        function updateLastReset() {
+            const dateStr = lastResetDate || 'Never';
+            document.getElementById('last-reset-display').innerText = dateStr;
+        }
+
+        function save() {
+            if (orgReady) {
+                const cur = {}; students.forEach(s => { cur[sKey(s.id)] = JSON.stringify(s); });
+                const u = pushDiff('students', cur, syncedStudents); syncedStudents = cur; cloudWrite(u);
+            }
+            renderLeaderboard();
+        }
+
+        // --- NAVIGATION & FOCUS ---
+        function showPage(pageId) {
+            document.querySelectorAll('#user-page, #admin-page, #admin-register-page, #admin-create-page, #admin-login-page, #admin-profiles-page').forEach(p => p.classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            // Hide admin banner if returning to public ranking view
+            if (pageId === 'user-page') {
+                document.getElementById('admin-status-container').classList.add('hidden');
+                setTimeout(() => document.getElementById('frontend-search').focus(), 50);
+            } else if (pageId === 'admin-page') {
+                if(!activeID) {
+                    document.getElementById('admin-search-results').classList.remove('hidden');
+                    adminLiveSearch();
+                }
+                setTimeout(() => document.getElementById('admin-search-input').focus(), 50);
+            } else if (pageId === 'admin-login-page') {
+                adminLoginLiveSearch();
+                setTimeout(() => document.getElementById('admin-login-search-input').focus(), 50);
+            }
+        }
+
+        
+		function checkAdminGate() {
+		    if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
+		    const gatePass = prompt("Enter Master Access Password:");
+		    if (gatePass === orgMasterPasscode) {
+		        showPage('admin-login-page');
+		    } else if (gatePass !== null) {
+		        alert("Incorrect Master Password.");
+		    }
+		}
+
+		function guestLogin() {
+		    if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
+		    const pass = prompt("Enter Secondary Passcode:");
+		    if (pass === secondaryPasscode()) {
+                loggedInAdmin = "Admin";
+                loggedInAdminProfile = null; isGuestSession = true;
+                
+                // Update header status for Guest
+                document.getElementById('admin-status-display').innerText = "admin mode: guest";
+                document.getElementById('admin-status-container').classList.remove('hidden');
+                
+		        showPage('admin-page');
+		    } else if (pass !== null) {
+		        alert("Incorrect Guest Password.");
+		    }
+		}
+
+        // --- CUSTOM ADMINS LOGIC ---
+        let adminLoginSearchIdx = -1;
+
+        function adminLoginLiveSearch() {
+            const query = document.getElementById('admin-login-search-input').value.toLowerCase().trim();
+            const resultsDiv = document.getElementById('admin-login-search-results');
+            resultsDiv.innerHTML = '';
+            adminLoginSearchIdx = -1;
+
+            let matches = query ? admins.filter(a => (a.fname + " " + a.lname).toLowerCase().includes(query)) : [...admins];
+
+            if(matches.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-center text-stone-500 font-bold p-4">No Admin Profiles Found.</p>';
+                return;
+            }
+
+            matches.forEach((a) => {
+                const btn = document.createElement('button');
+                btn.className = "admin-login-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${a.fname} ${a.lname}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${a.year}</span>`;
+                btn.onclick = () => {
+                    document.getElementById('auth-fname').value = a.fname;
+                    document.getElementById('auth-lname').value = a.lname;
+                    document.getElementById('auth-year').value = a.year;
+                    document.getElementById('auth-pass').focus();
+                };
+                resultsDiv.appendChild(btn);
+            });
+        }
+
+        function handleAdminLoginSearchKey(e) {
+            const btns = document.querySelectorAll('.admin-login-result-btn');
+            if(!btns.length) return;
+            if(e.key === 'ArrowDown') { e.preventDefault(); adminLoginSearchIdx = Math.min(adminLoginSearchIdx + 1, btns.length - 1); updateAdminLoginHighlight(btns); }
+            else if(e.key === 'ArrowUp') { e.preventDefault(); adminLoginSearchIdx = Math.max(adminLoginSearchIdx - 1, 0); updateAdminLoginHighlight(btns); }
+            else if(e.key === 'Enter') { 
+                e.preventDefault(); 
+                if(adminLoginSearchIdx >= 0) btns[adminLoginSearchIdx].click(); 
+                else btns[0].click(); 
+            }
+        }
+
+        function updateAdminLoginHighlight(btns) {
+            btns.forEach((b, i) => {
+                if(i === adminLoginSearchIdx) { b.classList.add('nav-active'); b.scrollIntoView({block:'nearest'}); }
+                else b.classList.remove('nav-active');
+            });
+        }
+
+		function processAdminLogin() {
+            const fn = document.getElementById('auth-fname').value.trim();
+            const ln = document.getElementById('auth-lname').value.trim();
+            const yr = document.getElementById('auth-year').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+
+            if (!fn || !yr || !pass) return alert("Please fill required fields.");
+            
+            // Check Registered Admin Database Only
+            const customMatch = admins.find(a => a.fname.toLowerCase() === fn.toLowerCase() && a.lname.toLowerCase() === ln.toLowerCase() && a.year === yr && a.pass === pass);
+            
+            if (customMatch) {
+                clearAuthFields();
+                loggedInAdmin = customMatch.fname;
+                loggedInAdminProfile = { fname: customMatch.fname, lname: customMatch.lname, year: customMatch.year }; isGuestSession = false;
+                
+                // Update header status for Registered Custom Admin
+                document.getElementById('admin-status-display').innerText = `admin mode: ${customMatch.fname} ${customMatch.lname} ${customMatch.year}`;
+                document.getElementById('admin-status-container').classList.remove('hidden');
+                
+                showPage('admin-page');
+            } else {
+                alert("Authentication Failed. Incorrect Credentials or Profile not found.");
+            }
+        }
+		
+        function clearAuthFields() {
+            document.getElementById('auth-fname').value = '';
+            document.getElementById('auth-lname').value = '';
+            document.getElementById('auth-year').value = '';
+            document.getElementById('auth-pass').value = '';
+        }
+
+        // --- NEW ADMIN PROFILES PAGE LOGIC ---
+        let adminProfSearchIdx = -1;
+        let activeAdminIdx = -1;
+
+        function openAdminProfilesPage() {
+            showPage('admin-profiles-page');
+            document.getElementById('admin-profiles-search').value = '';
+            closeAdminProfileView();
+            adminProfilesLiveSearch();
+            setTimeout(() => document.getElementById('admin-profiles-search').focus(), 50);
+        }
+
+        function adminProfilesLiveSearch() {
+            const query = document.getElementById('admin-profiles-search').value.toLowerCase().trim();
+            const resultsDiv = document.getElementById('admin-profiles-results');
+            resultsDiv.innerHTML = '';
+            adminProfSearchIdx = -1;
+
+            let matches = query ? admins.map((a, i) => ({...a, index: i})).filter(a => (a.fname + " " + a.lname).toLowerCase().includes(query)) : admins.map((a, i) => ({...a, index: i}));
+
+            if(matches.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-center text-stone-500 font-bold p-4">No Admin Profiles Found.</p>';
+                return;
+            }
+
+            matches.forEach((a) => {
+                const btn = document.createElement('button');
+                btn.className = "admin-prof-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${a.fname} ${a.lname}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${a.year}</span>`;
+                btn.onclick = () => viewAdminProfile(a.index);
+                resultsDiv.appendChild(btn);
+            });
+        }
+
+        function handleAdminProfilesKey(e) {
+            const btns = document.querySelectorAll('.admin-prof-result-btn');
+            if(!btns.length) return;
+            if(e.key === 'ArrowDown') { e.preventDefault(); adminProfSearchIdx = Math.min(adminProfSearchIdx + 1, btns.length - 1); updateAdminProfHighlight(btns); }
+            else if(e.key === 'ArrowUp') { e.preventDefault(); adminProfSearchIdx = Math.max(adminProfSearchIdx - 1, 0); updateAdminProfHighlight(btns); }
+            else if(e.key === 'Enter') { 
+                e.preventDefault(); 
+                if(adminProfSearchIdx >= 0) btns[adminProfSearchIdx].click(); 
+                else btns[0].click(); 
+            }
+        }
+
+        function updateAdminProfHighlight(btns) {
+            btns.forEach((b, i) => {
+                if(i === adminProfSearchIdx) { b.classList.add('nav-active'); b.scrollIntoView({block:'nearest'}); }
+                else b.classList.remove('nav-active');
+            });
+        }
+
+        function viewAdminProfile(idx) {
+            activeAdminIdx = idx;
+            const a = admins[idx];
+            document.getElementById('active-admin-name').innerText = `${a.fname} ${a.lname}`;
+            document.getElementById('active-admin-year').innerText = a.year;
+            
+            document.getElementById('admin-profiles-results').classList.add('hidden');
+            document.getElementById('admin-profile-view').classList.remove('hidden');
+        }
+
+        function closeAdminProfileView() {
+            activeAdminIdx = -1;
+            document.getElementById('admin-profile-view').classList.add('hidden');
+            document.getElementById('admin-profiles-results').classList.remove('hidden');
+            document.getElementById('admin-profiles-search').value = '';
+            adminProfilesLiveSearch();
+            setTimeout(() => document.getElementById('admin-profiles-search').focus(), 50);
+        }
+
+        
+        function deleteAdminProfile() {
+            if(activeAdminIdx === -1) return;
+            
+            if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
+            const revMaster = secondaryPasscode();
+            const attempt = prompt("Enter Secondary Passcode to authorize deletion:");
+            
+            if (attempt === revMaster) {
+                if (confirm("Are you absolutely sure you want to PERMANENTLY delete this Admin Profile?")) {
+                    const del = admins[activeAdminIdx], me = loggedInAdminProfile;
+                    const self = !!(me && del && del.fname === me.fname && del.lname === me.lname && del.year === me.year);
+                    admins.splice(activeAdminIdx, 1);
+                    saveAdmins();
+                    closeAdminProfileView();
+                    if (self) { performAdminLogout(); alertAfterPaint("Your own admin profile was deleted. You have been logged out."); }
+                    else alertAfterPaint("Admin profile successfully deleted.");
+                }
+            } else if (attempt !== null) {
+                alert("Authorization failed. Incorrect passcode.");
+            }
+        }
+
+        function editAdminPassword() {
+            if(activeAdminIdx === -1) return;
+            if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
+            const revMaster = secondaryPasscode();
+            const attempt = prompt("Enter Secondary Passcode to authorize change:");
+            if (attempt === revMaster) {
+                const newPass = prompt("Enter new password for " + admins[activeAdminIdx].fname + ":");
+                if (newPass !== null && newPass.trim() !== "") {
+                    admins[activeAdminIdx].pass = newPass.trim();
+                    saveAdmins();
+                    alert("Password successfully updated.");
+                } else if (newPass !== null) {
+                    alert("Password cannot be blank. Change cancelled.");
+                }
+            } else if (attempt !== null) {
+                alert("Authorization failed.");
+            }
+        }
+
+        function openCreateAdminPage() {
+            showPage('admin-create-page');
+            setTimeout(() => document.getElementById('new-admin-fname').focus(), 50);
+        }
+
+        function createAdmin() {
+            const fname = document.getElementById('new-admin-fname').value.trim();
+            const lname = document.getElementById('new-admin-lname').value.trim();
+            const year = document.getElementById('new-admin-year').value.trim();
+            let pass = document.getElementById('new-admin-pass').value.trim();
+
+            if(!fname || !lname || !year) return alert("Please fill Name and Year fields.");
+            if(!/^\d{1,4}$/.test(year) || parseInt(year, 10) < 1) return alert("Birth year must be a valid year (YYYY).");
+            if(parseInt(year, 10) > new Date().getFullYear()) return alert("Birth year cannot be later than the current year (" + new Date().getFullYear() + ").");
+            
+            if (admins.some(a => a.fname.toLowerCase() === fname.toLowerCase() && a.lname.toLowerCase() === lname.toLowerCase() && a.year === year)) {
+                return alert("An admin profile with this Name and Year already exists.");
+            }
+
+            if(!pass) {
+                pass = fname.charAt(0).toUpperCase() + '@' + year;
+            }
+            
+            admins.push({fname, lname, year, pass});
+            saveAdmins();
+            
+            document.getElementById('new-admin-fname').value = '';
+            document.getElementById('new-admin-lname').value = '';
+            document.getElementById('new-admin-year').value = '';
+            document.getElementById('new-admin-pass').value = '';
+            
+            openAdminProfilesPage();
+            alertAfterPaint(`Admin Profile created for ${fname}!`);
+        }
+
+        function openRegistrationPage() {
+            showPage('admin-register-page');
+            setTimeout(() => document.getElementById('reg-id').focus(), 50);
+        }
+
+        // --- CORE DATA OPERATIONS ---
+        function createStudent(id, pts) {
+            return {
+                id: id,
+                points: pts,
+                history: [{ date: getFormattedDate(), ts: Date.now(), reason: "Account Created", change: pts, totalAfter: pts, admin: loggedInAdmin || "System" }]
+            };
+        }
+
+        // Show a message only AFTER the screen has repainted, so the change that caused it (logout, page switch...)
+        // is already visible behind the alert instead of waiting until the alert is closed.
+        function alertAfterPaint(msg) { requestAnimationFrame(() => setTimeout(() => alert(msg), 30)); }
+
+        function addHistory(s, change, reason) {
+            if(!s.history) s.history = [{ date: getFormattedDate(), ts: Date.now(), reason: "Initial Baseline", change: s.points, totalAfter: s.points, admin: "System" }];
+            const newTotal = s.points + change;
+            s.history.push({ date: getFormattedDate(), ts: Date.now(), reason: reason, change: change, totalAfter: newTotal, admin: loggedInAdmin });
+            s.points = newTotal;
+        }
+
+        function registerStudent() {
+            const id = document.getElementById('reg-id').value.trim();
+            if(!id) return;
+            if(students.find(s => s.id === id)) return alert("ID Exists.");
+            
+            students.push(createStudent(id, CONFIG.STARTING_POINTS));
+            save();
+            document.getElementById('reg-id').value = '';
+            selectStudent(id); 
+            showPage('admin-page');
+        }
+
+        function importStudents() {
+            const raw = document.getElementById('import-area').value.trim();
+            if(!raw) return;
+            let added = 0;
+            raw.split('\n').forEach(line => {
+                const parts = line.split(',').map(p => p.trim());
+                if(parts.length >= 1 && parts[0] !== "") {
+                    const id = parts[0];
+                    let pts = parseInt(parts[1]);
+                    if(isNaN(pts)) pts = CONFIG.STARTING_POINTS;
+                    if(!students.find(s => s.id === id)) {
+                        students.push(createStudent(id, pts));
+                        added++;
+                    }
+                }
+            });
+            save();
+            document.getElementById('import-area').value = '';
+            closeProfile();
+            showPage('admin-page');
+            alertAfterPaint(`Imported ${added} students.`);
+        }
+
+        // Every "Monthly Reset" marker carries a number n. Entries after marker n belong to period n
+        // (entries before the first marker belong to period first-n minus 1). Graph colour = period number % 2.
+        function historyEpochs(hist) {
+            const ns = {}; let last = 0;
+            hist.forEach((h, i) => { if (h.reason === "Monthly Reset") { last = (typeof h.n === 'number') ? h.n : last + 1; ns[i] = last; } });
+            const first = hist.findIndex(h => h.reason === "Monthly Reset");
+            let cur = first < 0 ? 0 : ns[first] - 1;
+            return hist.map((h, i) => { if (ns[i] !== undefined) cur = ns[i]; return cur; });
+        }
+
+        function monthlyReset() {
+		    if(!confirm("Reset month?")) return;
+
+		    students.forEach(s => {
+		        const newPts = (s.points > 0) ? CONFIG.STARTING_POINTS : (CONFIG.STARTING_POINTS - Math.abs(s.points));
+				const diff = newPts - s.points;
+		        const eps = historyEpochs(s.history || []);
+		        const nextPeriod = (eps.length ? eps[eps.length - 1] : 0) + 1;
+
+		        // Always push the reset marker to keep point arithmetic accurate, but using "Monthly Reset" as the reason
+		        addHistory(s, diff, "Monthly Reset");
+		        s.history[s.history.length - 1].n = nextPeriod;
+
+		        // Only two graph colours may exist. The new period reuses the colour of the period before the
+		        // previous one, so everything older than the previous reset marker is deleted (the "Account Created" tag stays).
+		        const markers = [];
+		        s.history.forEach((h, i) => { if (h.reason === "Monthly Reset") markers.push(i); });
+		        if (markers.length >= 2) {
+		            const keepFrom = markers[markers.length - 2];
+		            s.history = s.history.filter((h, i) => i >= keepFrom || h.reason === "Account Created");
+		        }
+		    });
+		    lastResetDate = getFormattedDate(); dbSet('lastResetDate', lastResetDate);
+		    updateLastReset();
+		    save();
+		    activeID ? updatePanel() : adminLiveSearch();
+		}
+
+        function deleteProfile() {
+            if(!activeID || !confirm("PERMANENTLY Delete?")) return;
+            const gone = activeID;
+            students = students.filter(s => s.id !== gone);
+            const led = Coupons.loadLedger();
+            Object.keys(led).forEach(code => { if (led[code] && led[code].uid === gone) delete led[code]; });
+            Coupons.saveLedger(led);
+            activeID = null;
+            save();
+            closeProfile();
+        }
+
+        // --- ADMIN POINT INTERFACE ---
+        let adminSearchIdx = -1;
+        
+        function adminLiveSearch() {
+            const query = document.getElementById('admin-search-input').value.toLowerCase().trim();
+            const resultsDiv = document.getElementById('admin-search-results');
+            resultsDiv.innerHTML = '';
+            adminSearchIdx = -1;
+
+            let matches = query ? students.filter(s => s.id.toLowerCase().includes(query)) : [...students];
+            
+            matches.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
+            
+            matches.slice(0, 15).forEach((s) => {
+                const btn = document.createElement('button');
+                btn.className = "admin-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${s.id}</span> <span class="font-bold text-stone-500 bg-stone-100 dark:bg-stone-900 px-3 py-1 rounded-full">${s.points} 🪙</span>`;
+                btn.onclick = () => selectStudent(s.id);
+                resultsDiv.appendChild(btn);
+            });
+        }
+
+        function handleAdminSearchKey(e) {
+            const btns = document.querySelectorAll('.admin-result-btn');
+            if(!btns.length) return;
+            if(e.key === 'ArrowDown') { e.preventDefault(); adminSearchIdx = Math.min(adminSearchIdx + 1, btns.length - 1); updateAdminHighlight(btns); }
+            else if(e.key === 'ArrowUp') { e.preventDefault(); adminSearchIdx = Math.max(adminSearchIdx - 1, 0); updateAdminHighlight(btns); }
+            else if(e.key === 'Enter') { 
+                e.preventDefault(); 
+                if(adminSearchIdx >= 0) btns[adminSearchIdx].click(); 
+                else btns[0].click(); 
+            }
+        }
+
+        function updateAdminHighlight(btns) {
+            btns.forEach((b, i) => {
+                if(i === adminSearchIdx) { b.classList.add('nav-active'); b.scrollIntoView({block:'nearest'}); }
+                else b.classList.remove('nav-active');
+            });
+        }
+
+        function selectStudent(id) {
+            activeID = id;
+            document.getElementById('admin-search-results').classList.add('hidden');
+            document.getElementById('point-controls').classList.remove('hidden');
+            updatePanel();
+        }
+
+        function closeProfile() {
+            activeID = null;
+            document.getElementById('point-controls').classList.add('hidden');
+            document.getElementById('admin-search-results').classList.remove('hidden');
+            document.getElementById('admin-search-input').value = '';
+            adminLiveSearch();
+            document.getElementById('admin-search-input').focus();
+        }
+
+        function updatePanel() {
+            const s = students.find(x => x.id === activeID);
+            if(!s) return;
+            document.getElementById('active-id-display').innerText = s.id;
+            document.getElementById('active-points').innerText = s.points;
+        }
+
+        function addPts(n, reason) {
+            const s = students.find(x => x.id === activeID);
+            if(s) { addHistory(s, n, reason); save(); updatePanel(); }
+        }
+
+        // --- FRONTEND LEADERBOARD & MODAL ---
+        function renderPodium(top3) {
+		    const podiumDiv = document.getElementById('podium-display');
+		    if (!podiumDiv) return;
+		    
+		    if (!top3 || top3.length === 0) {
+		        podiumDiv.innerHTML = '<p class="text-stone-400 text-sm font-bold w-full text-center pb-4">No data yet</p>';
+		        return;
+		    }
+		
+		    // Configured visually as [2nd Place, 1st Place, 3rd Place]
+		    const config = [
+		        { data: top3[1], height: 'h-3/5', bg: 'bg-stone-300 dark:bg-stone-600', text: 'text-stone-700 dark:text-stone-200', emoji: '🥈' },
+		        { data: top3[0], height: 'h-full', bg: 'bg-amber-400 dark:bg-amber-500', text: 'text-stone-950', emoji: '🥇' },
+		        { data: top3[2], height: 'h-1/3', bg: 'bg-orange-300 dark:bg-orange-800', text: 'text-orange-900 dark:text-orange-200', emoji: '🥉' }
+		    ];
+		
+		    podiumDiv.innerHTML = config.map(pos => {
+		        if (!pos.data) return `<div class="w-1/3"></div>`;
+		        return `
+		            <div class="w-1/3 flex flex-col items-center justify-end h-full gap-1 cursor-pointer group" onclick="openProfileModal('${pos.data.id}')">
+		                <span class="text-[13px] font-black truncate w-full text-center text-stone-500 font-bold dark:text-stone-400 group-hover:text-amber-500 transition">${pos.data.id}</span>
+		                <div class="w-full ${pos.height} ${pos.bg} rounded-t-xl shadow-lg flex flex-col items-center justify-start pt-2 transition-transform group-hover:-translate-y-1">
+		                </div>
+		            </div>
+		        `;
+		    }).join('');
+		}
+		
+		function renderTierStats(allStudents) {
+		    const chartDiv = document.getElementById('tier-chart-display');
+		    if (!chartDiv) return;
+		
+		    let plati = 0, gol = 0, silv = 0, bron = 0, neutr = 0, nega = 0;
+		    allStudents.forEach(st => {
+		        if (st.points >= CONFIG.TIERS.PLATINUM) plati++;
+		        else if (st.points >= CONFIG.TIERS.GOLD) gol++;
+		        else if (st.points >= CONFIG.TIERS.SILVER) silv++;
+				else if (st.points > 0) bron++;
+				else if (st.points === 0) neutr++;
+				else if (st.points < 0) nega++;
+		    });
+		
+		    const max = Math.max(plati, gol, silv, bron, neutr, nega,1);
+		    
+		    // Configured as requested: Highest League First, color coded, emoji on X axis
+		    const bars = [
+		        { count: plati, color: 'bg-cyan-200 dark:bg-cyan-800', emoji: '💎' },
+		        { count: gol, color: 'bg-amber-300 dark:bg-amber-600', emoji: '🥇' },
+		        { count: silv, color: 'bg-stone-300 dark:bg-stone-600', emoji: '🥈' },
+				{ count: bron, color: 'bg-orange-400 dark:bg-orange-800', emoji: '🥉'},
+				{ count: neutr, color: 'bg-slate-300 dark:bg-slate-500', emoji: '⚪'},
+				{ count: nega, color: 'bg-red-400 dark:bg-red-800', emoji: '🚫'}
+		    ];
+		
+		    chartDiv.innerHTML = bars.map(b => {
+		        const h = b.count === 0 ? 0 : Math.max((b.count / max) * 100, 15); // Minimum 15% height just to show the bar if count > 0
+		        return `
+		            <div class="w-1/6 h-full flex flex-col justify-end items-center relative group">
+		                <div class="w-full ${b.color} rounded-t-md transition-all duration-500 flex justify-center items-start pt-1 shadow-md" style="height: ${h}%;">
+		                </div>
+		                <div class="absolute -bottom-8 text-2xl">${b.emoji}</div>
+		            </div>
+		        `;
+		    }).join('');
+		}
+		
+		let frontSearchIdx = -1;
+
+		let activeFilters = new Set();
+
+		function toggleFilter(tier) {
+		    const btn = document.querySelector(`button[data-tier="${tier}"]`);
+		    if (activeFilters.has(tier)) {
+		        activeFilters.delete(tier);
+		        // Turn off selection UI
+		        btn.classList.add('grayscale', 'opacity-50');
+		        btn.classList.remove('border-amber-500', 'bg-amber-100', 'dark:bg-amber-900/50');
+		    } else {
+		        activeFilters.add(tier);
+		        // Turn on selection UI
+		        btn.classList.remove('grayscale', 'opacity-50');
+		        btn.classList.add('border-amber-500', 'bg-amber-100', 'dark:bg-amber-900/50');
+		    }
+		    renderLeaderboard();
+		}
+		
+		function getTierBadge(points) {
+		    if (points >= CONFIG.TIERS.PLATINUM) {
+		        return `<span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">💎 Platinum</span>`;
+		    } else if (points >= CONFIG.TIERS.GOLD) {
+		        return `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥇 Gold</span>`;
+		    } else if (points >= CONFIG.TIERS.SILVER) {
+		        return `<span class="px-2.5 py-1 bg-stone-200 text-stone-800 dark:bg-stone-800/80 dark:text-stone-300 border border-stone-300 dark:border-stone-700 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥈 Silver</span>`;
+		    } else if (points > 0) {
+		        return `<span class="px-2.5 py-1 bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-400 border border-orange-300 dark:border-orange-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥉 Bronze</span>`;
+		    } else if (points === 0) {
+		        return `<span class="px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border border-slate-300 dark:border-slate-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">⚪ Neutral</span>`;
+		    } else {
+		        return `<span class="px-2.5 py-1 bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400 border border-red-300 dark:border-red-900/50 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🚫 Negative</span>`;
+		    }
+		}
+
+		function getTierTextOnly(points) {
+		    if (points >= CONFIG.TIERS.PLATINUM) return "- 💎 Platinum";
+		    if (points >= CONFIG.TIERS.GOLD) return "- 🥇 Gold";
+		    if (points >= CONFIG.TIERS.SILVER) return "- 🥈 Silver";
+		    if (points > 0) return "- 🥉 Bronze";
+		    if (points === 0) return "- ⚪ Neutral";
+		    return "- 🚫 Negative";
+		}
+		
+        function renderLeaderboard() {
+		    const list = document.getElementById('leaderboard');
+		    const query = document.getElementById('frontend-search').value.toLowerCase().trim();
+		    frontSearchIdx = -1;
+		
+		    // 1. Calculate Tiebreakers based on Net Increase (ignoring initialization and resets)
+		    let ranked = [...students].map(s => {
+		        let recentNet = 0;
+		        let allTimeNet = 0;
+		
+		        if (s.history) {
+		            // Find index of the most recent "Monthly Reset"
+		            let lastResetIndex = -1;
+		            for (let i = s.history.length - 1; i >= 0; i--) {
+		                if (s.history[i].reason === "Monthly Reset") {
+		                    lastResetIndex = i;
+		                    break;
+		                }
+		            }
+		
+		            // Tally net increases/decreases (+ and - values)
+		            s.history.forEach((h, index) => {
+		                // Ignore base points and systemic resets to calculate true "performance" net
+		                if (h.reason !== "Monthly Reset" && h.reason !== "Account Created" && h.reason !== "Initial Baseline") {
+		                    allTimeNet += h.change; // Tiebreaker 2
+		                    if (index > lastResetIndex) {
+		                        recentNet += h.change; // Tiebreaker 1
+		                    }
+		                }
+		            });
+		        }
+		        return { ...s, recentNet, allTimeNet };
+		    });
+		
+		    // 2. Advanced Multi-Level Sorting
+		    ranked.sort((a, b) => {
+		        // Primary Sort: Point Total
+		        if (b.points !== a.points) return b.points - a.points;
+		        // Tiebreaker 1: Net increase since last reset
+		        if (b.recentNet !== a.recentNet) return b.recentNet - a.recentNet;
+		        // Tiebreaker 2: Net increase all-time
+		        return b.allTimeNet - a.allTimeNet;
+		    });
+		
+		    // 3. Dense Ranking Logic (Rank 1, 2, 2, 3)
+		    if (ranked.length > 0) {
+		        ranked[0].globalRank = 1;
+		        let currentRank = 1;
+		        for (let i = 1; i < ranked.length; i++) {
+		            // Check if ALL conditions match
+		            if (ranked[i].points === ranked[i-1].points && 
+		                ranked[i].recentNet === ranked[i-1].recentNet && 
+		                ranked[i].allTimeNet === ranked[i-1].allTimeNet) {
+		                
+		                // Absolute Tie stands
+		                ranked[i].globalRank = currentRank;
+		            } else {
+		                // Tie broken - do not skip ranks
+		                currentRank++; 
+		                ranked[i].globalRank = currentRank;
+		            }
+		        }
+		    }
+		
+		    // 4. Apply text search input AND tier multi-filter Set
+		    const filtered = ranked.filter(s => {
+		        const matchesQuery = s.id.toLowerCase().includes(query);
+		        if (!matchesQuery) return false;
+		        
+		        if (activeFilters.size > 0) {
+		            let sTierName = "Negative";
+		            if (s.points >= CONFIG.TIERS.PLATINUM) sTierName = "Platinum";
+		            else if (s.points >= CONFIG.TIERS.GOLD) sTierName = "Gold";
+		            else if (s.points >= CONFIG.TIERS.SILVER) sTierName = "Silver";
+		            else if (s.points > 0) sTierName = "Bronze";
+		            else if (s.points === 0) sTierName = "Neutral";
+		            
+		            return activeFilters.has(sTierName);
+		        }
+		        return true;
+		    });
+		
+		    if (filtered.length === 0) { 
+		        list.innerHTML = "<p class='p-14 text-center font-black text-stone-400 dark:text-stone-500 uppercase tracking-widest text-sm bg-stone-50 dark:bg-stone-900/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-800'>No results found</p>"; 
+		        return; 
+		    }
+		    
+		    // 5. Render to screen
+		    list.innerHTML = filtered.map((s) => {
+		        const colorClass = s.points > 0 ? 'text-green-500' : (s.points === 0 ? 'text-stone-400' : 'text-red-500');
+		        const tierBadge = getTierBadge(s.points);
+		    
+		        return `
+		            <button class="front-result-btn w-full flex items-center justify-between p-4 bg-white dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-stone-700 transition rounded-2xl mb-2 border-2 border-transparent focus:outline-none shrink-0" onclick="openProfileModal('${s.id}')">
+		                <div class="flex items-center gap-4">
+		                    <div class="bg-amber-500 text-stone-950 font-black text-xl rounded-full h-12 w-12 flex items-center justify-center shadow-lg border-2 border-white dark:border-stone-900 drop-shadow-md shrink-0">
+		                        #${s.globalRank}
+		                    </div>
+		                    <h4 class="font-black text-xl text-maroon dark:text-amber-400 tracking-tight">${s.id}</h4>
+		                </div>
+		                <div class="flex flex-col items-end justify-center shrink-0">
+		                    <div class="text-3xl font-black ${colorClass} drop-shadow-sm flex items-center gap-2 mb-1">
+		                        ${s.points} <span class="text-2xl opacity-90">🪙</span>
+		                    </div>
+		                    ${tierBadge}
+		                </div>
+		            </button>`;
+		    }).join('');
+			renderPodium(ranked.slice(0, 3)); 
+    		renderTierStats(students);
+		}
+		
+        function frontEndSearch() { renderLeaderboard(); }
+
+        function handleFrontendKey(e) {
+            const btns = document.querySelectorAll('.front-result-btn');
+            if(!btns.length) return;
+            if(e.key === 'ArrowDown') { e.preventDefault(); frontSearchIdx = Math.min(frontSearchIdx + 1, btns.length - 1); updateFrontHighlight(btns); }
+            else if(e.key === 'ArrowUp') { e.preventDefault(); frontSearchIdx = Math.max(frontSearchIdx - 1, 0); updateFrontHighlight(btns); }
+            else if(e.key === 'Enter') { 
+                e.preventDefault(); 
+                if(frontSearchIdx >= 0) btns[frontSearchIdx].click(); 
+                else btns[0].click(); 
+            }
+        }
+
+        function updateFrontHighlight(btns) {
+            btns.forEach((b, i) => {
+                if(i === frontSearchIdx) { b.classList.add('nav-active'); b.scrollIntoView({block:'nearest'}); }
+                else b.classList.remove('nav-active');
+            });
+        }
+
+        // --- MODAL / CHART LOGIC ---
+        function openProfileModal(id) {
+            const s = students.find(x => x.id === id);
+            if(!s) return;
+            
+            document.getElementById('modal-id').innerText = s.id;
+            document.getElementById('modal-points').innerText = s.points;
+            document.getElementById('modal-tier-text').innerText = getTierTextOnly(s.points);
+			
+            const histList = document.getElementById('modal-history-list');
+            histList.innerHTML = '';
+            const safeHistory = s.history || [{ date: 'Unknown', reason: 'Legacy Data', change: s.points, totalAfter: s.points, admin: 'System' }];
+            
+
+			[...safeHistory].reverse().forEach(h => {
+			    if (h.reason === "Monthly Reset") {
+			        // Render a clean reset banner line instead of point adjustments
+			        histList.innerHTML += `
+			            <div class="flex justify-between items-center bg-amber-500/10 dark:bg-amber-500/5 p-2 rounded-xl border border-dashed border-amber-500/30 my-1">
+			                <div class="w-full text-center">
+			                    <p class="font-black text-xs uppercase tracking-widest text-amber-600 dark:text-amber-500">Monthly Reset <span class="opacity-70 text-[9px]">(BY ${h.admin || 'System'})</span></p>
+			                    <p class="text-[9px] text-stone-400 font-mono uppercase">${h.date}</p>
+			                </div>
+			            </div>`;
+			    } else {
+			        // Original rendering logic for standard transactions
+			        const isPos = h.change > 0;
+			        const sign = isPos ? '+' : '';
+			        const color = isPos ? 'text-green-500' : (h.change < 0 ? 'text-red-500' : 'text-stone-500');
+			        histList.innerHTML += `
+			            <div class="flex justify-between items-center bg-stone-50 dark:bg-stone-900 p-3 rounded-xl border border-stone-100 dark:border-stone-700">
+			                <div>
+			                    <p class="font-bold text-sm text-stone-800 dark:text-stone-200">${h.reason} <span class="text-[10px] text-stone-500 opacity-80 uppercase ml-1">(BY ${h.admin || 'System'})</span></p>
+			                    <p class="text-[10px] text-stone-400 font-mono uppercase">${h.date}</p>
+			                </div>
+			                <div class="text-right">
+			                    <p class="font-black ${color} text-lg">${sign}${h.change}</p>
+			                    <p class="text-[10px] text-stone-400 uppercase font-bold">Total: ${h.totalAfter}</p>
+			                </div>
+			            </div>`;
+			    }
+			});
+
+            document.getElementById('profile-modal').classList.remove('hidden');
+            renderChart(safeHistory);
+        }
+
+        function closeModal() {
+            document.getElementById('profile-modal').classList.add('hidden');
+            document.getElementById('frontend-search').focus();
+        }
+
+
+        function renderChart(historyData) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            
+            // Filter out resets for the graph data to eliminate empty gaps on the X-axis
+            const chartPoints = [];
+            const epochs = historyEpochs(historyData);   // period number of every entry (changes at each reset)
+
+            historyData.forEach((h, i) => {
+                if (h.reason !== "Monthly Reset") {
+                    chartPoints.push({ historyItem: h, segment: epochs[i] });
+                }
+            });
+            
+            // Create consecutive labels based only on actual transaction points
+            const labels = chartPoints.map((_, i) => `T${i+1}`);
+            
+            // 2 alternating colors matching your warm school theme
+            const colors = [
+                { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.2)' }, // Amber
+                { border: '#ea580c', bg: 'rgba(234, 88, 12, 0.2)' }  // Terracotta Orange-Red
+            ];
+            
+            // Group points into separate datasets by segment to break the line graph
+            const datasets = [];
+            const uniqueSegments = [...new Set(chartPoints.map(p => p.segment))];
+            
+            uniqueSegments.forEach((seg, idx) => {
+                const colorIndex = seg % 2;   // colour flips with every reset; only these two ever exist
+                // Pad data with null for points outside this specific segment 
+                const dataArray = chartPoints.map(p => p.segment === seg ? p.historyItem.totalAfter : null);
+                
+                datasets.push({
+                    label: 'Points History',
+                    data: dataArray,
+                    borderColor: colors[colorIndex].border,
+                    backgroundColor: colors[colorIndex].bg,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#7f1d1d',
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.3
+                });
+            });
+
+            // Fallback for empty history
+            if (datasets.length === 0) {
+                datasets.push({
+                    label: 'Points History',
+                    data: [],
+                    borderColor: colors[0].border,
+                    backgroundColor: colors[0].bg,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#7f1d1d',
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.3
+                });
+            }
+
+            const gridColor = isDarkMode ? '#44403c' : '#ffedd5';
+            const textColor = isDarkMode ? '#d6d3d1' : '#78350f';
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: {
+                        callbacks: { 
+                            title: (c) => chartPoints[c[0].dataIndex].historyItem.date, 
+                            label: (c) => `Reason: ${chartPoints[c.dataIndex].historyItem.reason} | Total: ${c.raw}` 
+                        }
+                    }},
+                    scales: {
+                        y: { 
+                            border: { display: false }, // Hides the vertical y-axis black line
+                            grid: { color: gridColor }, 
+                            ticks: { color: textColor, font:{weight:'bold'}, precision: 0, maxTicksLimit: 8 } 
+                        },
+                        x: { 
+                            border: { display: false }, // Hides the horizontal x-axis black line
+                            grid: { display: false }, 
+                            ticks: { color: textColor, font:{size: 10} } 
+                        }
+                    }
+                }
+            });
+        }
+		
+        function updateChartTheme() {
+            if(chartInstance) {
+                const gridColor = isDarkMode ? '#44403c' : '#ffedd5';
+                const textColor = isDarkMode ? '#d6d3d1' : '#78350f';
+                chartInstance.options.scales.x.ticks.color = textColor;
+                chartInstance.options.scales.y.ticks.color = textColor;
+                chartInstance.options.scales.y.grid.color = gridColor;
+                chartInstance.update();
+            }
+        }
+
+		// --- AUTO LOGOUT ON INACTIVITY & DYNAMIC NAV BAR ---
+        let inactivityTimer = null;
+        const INACTIVITY_LIMIT = 5 * 60 * 1000; // 05 minutes in milliseconds
+
+        // Hardcoded collection of restricted templates to easily support adding more pages in the future
+        const restrictedPages = [
+            'admin-login-page', 
+            'admin-page', 
+            'admin-profiles-page', 
+            'admin-register-page', 
+            'admin-create-page'
+        ];
+
+        function performAdminLogout() {
+            // Clear any active automated timer countdowns
+            clearTimeout(inactivityTimer);
+			closeProfile();
+            // Hard wipe admin validation state flags
+            loggedInAdmin = "";
+            loggedInAdminProfile = null; isGuestSession = false;
+            closeRedeem(); closeRec(); closeRecSuccess();
+            activeID = null;
+            activeAdminIdx = -1;
+            
+            // Re-blank input placeholders on the login sheet
+            clearAuthFields();
+            
+            // Hide administrative context display banner element
+            document.getElementById('admin-status-container').classList.add('hidden');
+            
+            // Route back safely to primary public board view 
+            showPage('user-page');
+        }
+
+        function resetInactivityTimer() {
+            // Clear current running clock
+            clearTimeout(inactivityTimer);
+
+            // Scan the DOM to locate which major page view block does not contain 'hidden'
+            const activePage = document.querySelector('body > div:not(.hidden)');
+            
+            // Find your custom nav-bar control button by scanning existing event properties dynamically
+            const navActionButton = document.querySelector("button[onclick='checkAdminGate()']") || document.querySelector("button[onclick='performAdminLogout()']");
+
+            if (activePage) {
+                // Check if the currently visible page's ID exists inside our custom restrictedPages tracker list
+                const isUserInRestrictedZone = restrictedPages.includes(activePage.id);
+
+                if (isUserInRestrictedZone) {
+                    // --- PROTECTED ACTION ENVIRONMENT ---
+                    // Convert target button variant parameters into an explicit Logout handler
+                    if (navActionButton) {
+                        navActionButton.innerText = "Logout";
+                        navActionButton.setAttribute("onclick", "performAdminLogout()");
+                        // Updated line below: using w-32 and removing px-5/min-w
+                        navActionButton.className = "w-28 py-2 bg-red-600 hover:bg-red-500 text-white font-black rounded-lg transition shadow-lg border-b-4 border-red-800 uppercase tracking-widest text-center";
+                    }
+
+                    // Spin up the background session countdown execution context safely
+                    inactivityTimer = setTimeout(() => {
+                        performAdminLogout();
+                        alertAfterPaint("Session expired due to inactivity.");
+                    }, INACTIVITY_LIMIT);
+
+                } else {
+                    // --- PUBLIC STANDARD ENVIRONMENT ---
+                    // Reset back to initial default configuration values instantly
+                    if (navActionButton) {
+                        navActionButton.innerText = "Admin+";
+                        navActionButton.setAttribute("onclick", "checkAdminGate()");
+                        // Updated line below: using w-32 and removing px-5/min-w
+                        navActionButton.className = "w-28 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center";
+                    }
+                }
+            }
+        }
+              
+        // Setup performance-safe window hooks monitoring interface activity changes
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(eventType => {
+            window.addEventListener(eventType, resetInactivityTimer, { passive: true });
+        });
+
+        // Intercept application visual router mutations to enforce instantaneous navigation state logic checks
+        const originalShowPage = showPage;
+        showPage = function(pageId) {
+            originalShowPage(pageId);
+            resetInactivityTimer();
+        };
+		
+        // --- INITIALIZATION ---
+        function initUI() {
+            updateLastReset();
+            const posDiv = document.getElementById('pos-buttons'), negDiv = document.getElementById('neg-buttons');
+            
+            POS_LIST.forEach(i => {
+                const b = document.createElement('button');
+                b.className = "bg-white dark:bg-stone-900 border-2 border-green-100 dark:border-green-900/50 p-3 rounded-xl text-xs font-black uppercase tracking-widest flex flex-col justify-between items-start hover:border-green-400 dark:hover:border-green-500 transition shadow-sm text-stone-700 dark:text-stone-300 h-full w-full text-left";
+                b.innerHTML = `
+                    <div class="flex justify-between items-center w-full mb-1">
+                        <span>${i.l}</span>
+                        <span class="text-green-600 dark:text-green-400 text-lg">+${i.p}</span>
+                    </div>
+                    <div class="text-[9px] font-serif text-stone-500 dark:text-stone-400 normal-case tracking-normal">${i.d}</div>
+                `;
+                b.onclick = () => addPts(i.p, i.l);
+                posDiv.appendChild(b);
+            });
+            
+            NEG_LIST.forEach(i => {
+                const b = document.createElement('button');
+                b.className = "bg-white dark:bg-stone-900 border-2 border-red-100 dark:border-red-900/50 p-3 rounded-xl text-xs font-black uppercase tracking-widest flex flex-col justify-between items-start hover:border-red-400 dark:hover:border-red-500 transition shadow-sm text-stone-700 dark:text-stone-300 h-full w-full text-left";
+                b.innerHTML = `
+                    <div class="flex justify-between items-center w-full mb-1">
+                        <span>${i.l}</span>
+                        <span class="text-red-600 dark:text-red-400 text-lg">${i.p}</span>
+                    </div>
+                    <div class="text-[9px] font-serif text-stone-500 dark:text-stone-400 normal-case tracking-normal">${i.d}</div>
+                `;
+                b.onclick = () => addPts(i.p, i.l);
+                negDiv.appendChild(b);
+            });
+
+            Coupons.sweep();
+            setInterval(Coupons.sweep, 60000);
+            applyTheme();
+            renderLeaderboard();
+            setTimeout(() => document.getElementById('frontend-search').focus(), 100);
+        }
+        initUI();
+        initOrgGate();
+	</script>
+</body>
+</html>
