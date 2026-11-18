@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#7f1d1d">
     <title>PointSystem v4.5.2</title>
     <script>
         // Apply this device's saved light/dark choice immediately, before the page is drawn.
@@ -32,7 +34,133 @@
         .bg-maroon { background-color: #7f1d1d; } 
         
         .rd-active { outline: 3px solid rgba(245, 158, 11, 0.9); outline-offset: -3px; background-color: rgba(245, 158, 11, 0.18); }
-        .nav-active { border-color: #f59e0b !important; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.4) !important; transform: scale(1.01); }
+        .nav-active { border-color: #f59e0b !important; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.4) !important; position: relative; z-index: 1; }
+        #leaderboard, #admin-search-results, #admin-profiles-results, #admin-login-search-results { overflow-x: hidden; }
+
+        /* ===================== MOBILE LAYOUT (phones <768px; tablets and desktops keep the normal layout) ===================== */
+        html { -webkit-text-size-adjust: 100%; }
+        button, input, textarea, select { touch-action: manipulation; }
+        body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
+        #redeem-body, #modal-history-list, #profile-body { overscroll-behavior: contain; }
+        /* touchscreens: keyboard-only hints make no sense */
+        @media (pointer: coarse), (max-width: 767px) { .kbd-hint { display: none !important; } #frontend-search + p { display: none !important; } }
+
+        @media (max-width: 767px) {
+            html, body { overflow-x: hidden; }
+            body { min-height: 100dvh; }
+            input, textarea, select { font-size: 16px !important; }          /* stops iPhones zooming in when a field is tapped */
+
+            /* header */
+            nav { padding: .6rem .75rem !important; padding-top: calc(.6rem + env(safe-area-inset-top)) !important; gap: .5rem !important; }
+            nav h1 { font-size: 1.35rem !important; }
+            nav h1 span { font-size: .7rem !important; }
+            #admin-status-container { width: 100%; text-align: center; padding: .4rem .6rem !important; font-size: .65rem !important; }
+            #nav-right { gap: .5rem !important; justify-content: space-between !important; }
+            #nav-right > div:last-child { gap: .4rem !important; margin-left: auto; }
+            #nav-right button { width: auto !important; padding: .45rem .7rem !important; font-size: .65rem !important; }
+            #org-badge { font-size: .6rem; }
+
+            /* page padding + cards */
+            #user-page, #admin-page, #admin-profiles-page, #admin-register-page, #admin-create-page, #admin-login-page { padding: .75rem !important; margin-top: 0 !important; }
+            #org-gate { padding: .75rem !important; margin-top: 1rem !important; }
+            #org-gate > div, #admin-login-page .grid > div, #admin-register-page .grid > div, #admin-create-page > div:last-child { padding: 1.1rem !important; }
+            #org-gate h2, #admin-login-page h2, #admin-register-page h3, #admin-create-page h3 { font-size: 1.1rem !important; margin-bottom: 1rem !important; padding-bottom: .6rem !important; }
+            #admin-login-page .grid { gap: 1rem !important; }
+            #admin-register-page .grid { gap: 1rem !important; }
+
+            /* rankings */
+            #user-page > h2 { font-size: 1.5rem !important; margin-bottom: .75rem !important; }
+            #user-page > .grid { gap: 1rem !important; }
+            #tier-filters .filter-btn { padding: .35rem .6rem !important; font-size: 1.05rem !important; }
+            #frontend-search { padding: .8rem 1rem !important; font-size: 1rem !important; border-width: 3px !important; border-radius: 1rem !important; }
+            #leaderboard { height: 56vh !important; min-height: 320px; }
+            #leaderboard .front-result-btn { padding: .55rem .7rem !important; margin-bottom: .35rem !important; gap: .5rem; }
+            #leaderboard .front-result-btn > div:first-child { gap: .6rem !important; min-width: 0; flex: 1 1 auto; }
+            #leaderboard .front-result-btn > div:first-child > div { height: 2.25rem !important; width: 2.25rem !important; font-size: .9rem !important; }
+            #leaderboard .front-result-btn h4 { font-size: 1.05rem !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+            #leaderboard .front-result-btn > div:last-child > div:first-child { font-size: 1.35rem !important; margin-bottom: .15rem !important; gap: .3rem !important; }
+            #leaderboard .front-result-btn > div:last-child > div:first-child span { font-size: 1.1rem !important; }
+            #user-page .lg\:col-span-1 > div { padding: 1rem !important; }
+            #user-page .lg\:col-span-1 h3 { font-size: 1rem !important; margin-bottom: .75rem !important; }
+
+            /* management dashboard */
+            #admin-head { flex-direction: column !important; align-items: stretch !important; gap: .6rem; margin-bottom: .75rem !important; }
+            #admin-head h2 { font-size: 1.5rem !important; }
+            #admin-btns { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: .5rem !important; }
+            #admin-btns button { width: 100%; padding: .65rem .25rem !important; font-size: .85rem !important; }
+            #admin-card { max-height: none !important; padding: 1rem !important; margin-bottom: 1rem !important; border-radius: 1.25rem !important; }
+            #admin-search-input { padding: .75rem .9rem !important; margin-bottom: .6rem !important; border-width: 3px !important; }
+            #admin-search-results { max-height: 50vh !important; padding: .25rem !important; }
+            #admin-search-results .admin-result-btn { padding: .7rem .8rem !important; }
+            #admin-search-results .admin-result-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+            #point-controls { max-height: none !important; padding-top: 1rem !important; margin-top: .5rem !important; }
+            #point-controls > .grid { display: block !important; }          /* so the balance card can stay pinned while you scroll the buttons */
+            #student-card { max-height: none !important; padding: .9rem 1rem !important; border-radius: 1.25rem !important; position: sticky; top: .25rem; z-index: 20; }
+            #student-card > div:nth-child(2) { margin-bottom: .6rem !important; padding-bottom: .6rem !important; }
+            #student-card .text-4xl { font-size: 1.6rem !important; }
+            #student-card .text-5xl { font-size: 2rem !important; }
+            #perk-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .6rem !important; margin-top: .75rem; }
+            #perk-grid > div { min-width: 0; }
+            #perk-grid > div { max-height: 42vh !important; }
+            #perk-grid > div > div:first-child { padding: .6rem .8rem !important; }
+            #perk-grid > div > div:last-child { padding: .6rem !important; }
+
+            /* admin profiles / register / create */
+            #admin-profiles-page > div:first-child { flex-wrap: wrap; gap: .6rem; }
+            #admin-profiles-page h2, #admin-register-page h2, #admin-create-page h2 { font-size: 1.3rem !important; }
+            #admin-register-page > div:first-child, #admin-create-page > div:first-child { flex-wrap: wrap; margin-bottom: 1rem !important; gap: .6rem !important; }
+            #admin-profiles-page > div:nth-child(2) { max-height: none !important; padding: 1rem !important; }
+            #admin-profiles-results { max-height: 50vh !important; }
+            #admin-profile-view { max-height: none !important; padding-top: 1rem !important; }
+            #admin-profile-view > div { padding: 1rem !important; }
+            #admin-profile-view .border-b { flex-wrap: wrap; gap: .5rem; }
+            #admin-profile-view button { white-space: nowrap; padding: .4rem .6rem !important; }
+            #admin-profile-view .text-4xl, #admin-profile-view .text-5xl { font-size: 1.6rem !important; overflow-wrap: anywhere; }
+
+            /* pop-ups: fit the visible screen */
+            #redeem-modal, #rec-modal, #rec-success-modal, #qr-modal, #profile-modal { padding: .6rem !important; }
+            #redeem-modal > div { max-height: 92dvh !important; border-radius: 1.25rem !important; }
+            #redeem-body { padding: .8rem !important; }
+            #redeem-body th, #redeem-body td { padding: .4rem .35rem !important; }
+            #qr-modal > div { max-height: 94dvh !important; }
+            #profile-box { max-height: 94dvh !important; border-radius: 1.25rem !important; }
+            #profile-head { padding: .8rem 1rem !important; }
+            #profile-head #modal-id { font-size: 1.5rem !important; }
+            #profile-head p { white-space: nowrap; font-size: .65rem !important; }
+            #profile-head p.text-4xl { font-size: 1.35rem !important; }
+            #profile-head > div:last-child { gap: .5rem !important; flex-shrink: 0; }
+            #profile-head button { width: 2.25rem !important; height: 2.25rem !important; font-size: 1rem !important; }
+            #modal-tier-text { width: auto !important; }
+            #profile-body { display: block !important; overflow-y: auto !important; padding: .75rem !important; }
+            #profile-body > div { height: auto !important; margin-bottom: .75rem; }
+            #profile-body > div:first-child > div { height: 230px !important; flex: none !important; }     /* chart first, then the log */
+            #modal-history-list { max-height: none !important; overflow: visible !important; flex: none !important; padding-right: 0 !important; }
+        }
+
+        /* small dark key-hint badge, corner-pinned so it never shifts a button's own text */
+        .btn-key { position: relative; }
+        .btn-key > .keyhint {
+            position: absolute; top: -8px; right: -8px; z-index: 5;
+            /* Colour comes from each button's own --kh-bg/--kh-fg (its RESTING colour) via inline style,
+               not live "inherit" - inherit would also pick up the :hover background, which we don't want. */
+            background: var(--kh-bg, #1c1917); color: var(--kh-fg, #fbbf24); border: 1px solid currentColor;
+            font-size: 9px; font-weight: 900; letter-spacing: .02em; line-height: 1;
+            padding: 3px 5px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,.5);
+            pointer-events: none; user-select: none; white-space: nowrap;
+        }
+        /* Desktop only: keep the dashboard action row from making the header taller than its title. */
+        @media (min-width: 768px) {
+            #admin-btns > button {
+                padding-top: .3rem !important;
+                padding-bottom: .3rem !important;
+            }
+        }
+        /* Hide the dashboard action row while a student profile is open (all screen sizes). */
+        #admin-btns.profile-open { display: none !important; }
+        #perk-grid.profile-columns { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        #perk-grid.profile-columns > div { min-width: 0; }
+        .guest-restricted { opacity: .38 !important; filter: grayscale(1); cursor: not-allowed !important; }
+
     </style>
 </head>
 <body id="main-body" class="bg-orange-50 text-stone-900 dark:text-stone-100 min-h-screen font-sans transition-colors duration-300">
@@ -63,7 +191,7 @@
 			<div class="flex items-center gap-3">
 
 				<button id="org-exit-btn" onclick="orgLogout()" class="hidden px-4 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded-lg transition font-bold uppercase tracking-widest shadow-lg border-b-4 border-orange-900">Exit Org</button>
-				<button onclick="checkAdminGate()" class="w-28 py-2 bg-amber-600 hover:bg-amber-550 text-stone-950 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center">Admin+</button>
+				<button onclick="checkAdminGate()" class="w-28 py-2 bg-amber-600 hover:bg-amber-500 text-stone-900 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center">Admin+</button>
 			</div>
         </div>
     </nav>
@@ -79,7 +207,7 @@
                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); orgLogin(); }"
                    class="w-full border-2 border-stone-300 dark:border-stone-700 p-3 rounded-xl outline-none focus:border-amber-500 mb-2 font-bold text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400">
             <p id="org-error" class="text-red-600 dark:text-red-400 text-sm font-bold min-h-[1.25rem] mb-3"></p>
-            <button id="org-login-btn" onclick="orgLogin()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40">Login</button>
+            <button id="org-login-btn" onclick="orgLogin()" style="--kh-bg:#7f1d1d;--kh-fg:#fff;" class="btn-key w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-900 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40"><span id="org-login-btn-label">Login</span><span class="keyhint">Enter</span></button>
         </div>
     </div>
     <input id="load-file-input" type="file" accept=".json,application/json" class="hidden" onchange="onLoadFile(event)">
@@ -135,18 +263,25 @@
                 <h2 class="text-2xl font-black mb-6 text-center text-maroon dark:text-amber-500 uppercase tracking-widest border-b pb-4 dark:border-stone-800">Admin Authentication</h2>
                 
                 <div class="space-y-1 mb-6">
-                    <input id="auth-fname" type="text" placeholder="First Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-lname').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
-                    <input id="auth-lname" type="text" placeholder="Last Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-year').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
-                    <input id="auth-year" type="number" placeholder="Birth Year (YYYY)" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('auth-pass').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
-                    <input id="auth-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') { event.preventDefault(); processAdminLogin(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <input id="auth-fname" type="text" placeholder="First Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); if(event.shiftKey) { guestLoginStep(); } else { document.getElementById('auth-lname').focus(); } }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <input id="auth-lname" type="text" placeholder="Last Name" onkeydown="if(event.key==='Enter') { event.preventDefault(); if(event.shiftKey || guestPending) { guestLoginStep(); } else {document.getElementById('auth-year').focus(); } }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    <div id="auth-regfields" class="space-y-1">
+                        <input id="auth-year" type="number" placeholder="Birth Year (YYYY)" onkeydown="if(event.key==='Enter') { event.preventDefault(); if(event.shiftKey) { guestLoginStep(); } else { document.getElementById('auth-pass').focus(); } }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                        <input id="auth-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') { event.preventDefault(); if(event.shiftKey) { guestLoginStep(); } else { processAdminLogin(); } }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
+                    </div>
+                    <div id="auth-guestfields" class="hidden bg-stone-100 dark:bg-stone-800 border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl p-3 text-center space-y-2">
+                        <p class="text-xs font-bold italic text-stone-500 dark:text-stone-400">Guests don't require these fields.</p>
+                        <button type="button" onclick="setGuestPending(false)" class="w-full bg-stone-200 text-stone-800 py-2 rounded-lg font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs" onkeydown="if(event.key==='Escape'){event.preventDefault(); setGuestPending(false)};">Registered Login</button>
+                    </div>
                 </div>
 
-                <button onclick="processAdminLogin()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40 mb-4">
-                    Login / Authenticate
+                <button onclick="processAdminLogin()" style="--kh-bg:#7f1d1d;--kh-fg:#fff;" class="btn-key w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-900 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40 mb-4">
+                    Authenticate<span class="keyhint">Enter</span>
                 </button>
-                <button onclick="guestLogin()" class="w-full bg-stone-700 text-white py-3 rounded-xl font-bold hover:bg-stone-600 transition shadow-md uppercase tracking-widest text-xs">
-                    Guest Admin Login
+                <button onclick="guestLoginStep()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key w-full bg-stone-700 text-white py-3 rounded-xl font-bold hover:bg-stone-600 transition shadow-md uppercase tracking-widest text-xs">
+                    Guest Admin Login<span class="keyhint">Shift+Enter</span>
                 </button>
+                <p id="guest-hint" class="hidden text-xs font-bold text-center text-amber-700 dark:text-amber-400 mt-3">Guest login: type your first and last name in the boxes above, then press Enter.</p>
             </div>
 
             <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-amber-600 dark:border-stone-700">
@@ -162,30 +297,30 @@
 		</div>
 	</div>
     <div id="admin-page" class="hidden p-6 max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
+        <div id="admin-head" class="flex justify-between items-center mb-6">
             <h2 class="text-3xl font-black text-maroon dark:text-amber-500 drop-shadow-sm">Management Dashboard</h2>
-            <div class="flex flex-wrap justify-end gap-2">
-                <button onclick="openAdminProfilesPage()" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-600 transition border-b-4 border-black/60">
+            <div id="admin-btns" class="flex flex-wrap justify-end gap-2">
+                <button id="apr-btn" onclick="openAdminProfilesPage()" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-600 transition border-b-4 border-black/60">
                     APR
                 </button>
-                <button onclick="openRegistrationPage()" class="bg-amber-600 text-stone-950 px-6 py-2 rounded-xl font-black shadow-lg hover:bg-amber-500 transition border-b-4 border-amber-800">
+                <button id="spr-btn" onclick="openRegistrationPage()" class="bg-amber-600 text-stone-900 px-6 py-2 rounded-xl font-black shadow-lg hover:bg-amber-500 transition border-b-4 border-amber-800">
                     SPR
                 </button>
-                <button onclick="openRec()" class="bg-blue-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-blue-600 transition border-b-4 border-blue-950">
+                <button id="rec-btn" onclick="openRec()" class="bg-blue-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-blue-600 transition border-b-4 border-blue-900">
                     REC
                 </button>
-                <button onclick="exportAllData()" class="bg-green-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-green-600 transition border-b-4 border-green-950">
+                <button id="xpt-btn" onclick="exportAllData()" class="bg-green-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-green-600 transition border-b-4 border-green-900">
                     XPT
                 </button>
                 <button id="load-btn" onclick="loadAllData()" class="bg-yellow-700 text-white px-5 py-2 rounded-xl font-black shadow-lg hover:bg-yellow-600 transition border-b-4 border-black/60">
                     LDD
                 </button>
-				<button onclick="monthlyReset()" class="bg-red-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 transition border-b-4 border-red-950">
+				<button id="rmc-btn" onclick="monthlyReset()" class="bg-red-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 transition border-b-4 border-red-900">
                     RMC
                 </button>
             </div>
         </div>
-        <div class= "max-h-[450px] bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600 mb-8">
+        <div id="admin-card" class= "max-h-[450px] bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-maroon dark:border-amber-600 mb-8">
             <label class="block text-xs font-black text-orange-700 dark:text-amber-500 uppercase tracking-widest mb-3">Find Student</label>
             <input id="admin-search-input" type="text" 
                    oninput="adminLiveSearch()" 
@@ -196,13 +331,13 @@
             <div id="point-controls" class=" max-h-[290px] hidden border-t-2 border-dashed border-orange-200 dark:border-stone-700 pt-8 mt-4">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-                    <div class="max-h-[240px] bg-stone-900 text-white p-8 rounded-3xl shadow-2xl border-b-8 border-amber-500 relative overflow-hidden lg:sticky lg:top-4">
+                    <div id="student-card" class="max-h-[240px] bg-stone-900 text-white p-8 rounded-3xl shadow-2xl border-b-8 border-amber-500 relative overflow-hidden lg:sticky lg:top-4">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
                         <div class="flex justify-between items-start mb-8 border-b border-stone-700 pb-4 relative z-10">
-                            <button onclick="closeProfile()" class="bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close</button>
+                            <button onclick="closeProfile()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close<span class="keyhint">Esc</span></button>
                             <div class="flex gap-4">
-								<button onclick="openRedeem()" class="bg-blue-700 hover:bg-blue-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Redeem 🎁</button>
-                            	<button onclick="deleteProfile()" class="bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete 🗑</button>
+								<button id="student-redeem-btn" onclick="openRedeem()" class="bg-blue-700 hover:bg-blue-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Redeem 🎁</button>
+                            	<button id="student-delete-btn" onclick="deleteProfile()" class="bg-red-900 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete 🗑</button>
                         	</div>
 						</div>
                         <div class="flex flex-row justify-between items-center gap-6 relative z-10">
@@ -212,11 +347,11 @@
                             </div>
                             <div>
                                 <p class="text-amber-500 text-xs font-black uppercase tracking-widest mb-1">Total Balance</p>
-                                <p class="text-5xl font-black text-amber-400 drop-shadow-lg"><span id="active-points">1</span><span class="text-5xl ml-2 opacity-80">🪙</span></p>
+                                <p class="text-5xl font-black text-amber-400 drop-shadow-lg"><span id="active-points">0</span><span class="text-5xl ml-2 opacity-80">🪙</span></p>
                             </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="perk-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-green-50 dark:bg-stone-800/50 rounded-2xl border-2 border-green-100 dark:border-green-900/30 flex flex-col max-h-[240px] overflow-hidden shadow-inner">
                             <div class="p-4 pb-3 bg-green-50 dark:bg-stone-800/95 sticky top-0 z-10 border-b-2 border-green-200 dark:border-green-800/60 shadow-sm backdrop-blur-md">
                                 <h5 class="font-black text-green-700 dark:text-green-400 uppercase text-sm tracking-widest flex items-center gap-2 m-0">
@@ -246,7 +381,7 @@
     <div id="admin-profiles-page" class="hidden p-6 max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-4">
-                <button onclick="showPage('admin-page')" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash</button>
+                <button onclick="showPage('admin-page')" style="--kh-bg:#e7e5e4;--kh-fg:#292524;" class="btn-key bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash<span class="keyhint">Esc</span></button>
                 <h2 class="text-3xl font-black text-maroon dark:text-amber-500 drop-shadow-sm">Admin Profiles</h2>
             </div>
             <button onclick="openCreateAdminPage()" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-600 transition border-b-4 border-black/60">
@@ -268,10 +403,10 @@
                 <div class="bg-stone-900 text-white p-8 rounded-3xl shadow-2xl mb-8 border-b-8 border-amber-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
                     <div class="flex justify-between items-start mb-6 border-b border-stone-700 pb-4 relative z-10">
-                        <button onclick="closeAdminProfileView()" class="bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close Profile</button>
+                        <button onclick="closeAdminProfileView()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close Profile<span class="keyhint">Esc</span></button>
                         <div class="flex gap-2">
-                            <button onclick="editAdminPassword()" class="bg-amber-600 hover:bg-amber-500 text-stone-950 text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Edit Password 🔑</button>
-                            <button onclick="deleteAdminProfile()" class="bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete Profile 🗑</button>
+                            <button onclick="editAdminPassword()" class="bg-amber-600 hover:bg-amber-500 text-stone-900 text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Edit Password 🔑</button>
+                            <button onclick="deleteAdminProfile()" class="bg-red-900 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete Profile 🗑</button>
                         </div>
                     </div>
                     <div class="flex justify-between items-center relative z-10">
@@ -290,7 +425,7 @@
 	</div>
     <div id="admin-register-page" class="hidden p-6 max-w-5xl mx-auto">
         <div class="flex items-center gap-4 mb-8">
-            <button onclick="showPage('admin-page')" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash</button>
+            <button onclick="showPage('admin-page')" style="--kh-bg:#e7e5e4;--kh-fg:#292524;" class="btn-key bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Dash<span class="keyhint">Esc</span></button>
             <h2 class="text-3xl font-black text-maroon dark:text-amber-500">Database Entry</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -299,18 +434,18 @@
                 <div class="space-y-6">
                     <div>
                         <label class="text-xs font-black text-orange-700 dark:text-amber-600 uppercase tracking-widest mb-2 block">Student ID</label>
-                        <input id="reg-id" type="text" placeholder="Enter ID & Press Enter..." onkeydown="if(event.key==='Enter') registerStudent()"
+                        <input id="reg-id" type="text" placeholder="Enter ID, e.g. A123456 & press Enter..." maxlength="7" oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key==='Enter') registerStudent()"
                                class="w-full border-4 p-4 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold text-lg transition">
                     </div>
-                    <button onclick="registerStudent()" class="w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-950 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40">
-                        Register Student
+                    <button onclick="registerStudent()" style="--kh-bg:#7f1d1d;--kh-fg:#fff;" class="btn-key w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-900 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40">
+                        Register Student<span class="keyhint">Enter</span>
                     </button>
                 </div>
             </div>
             <div class="bg-white dark:bg-stone-900 p-8 rounded-3xl shadow-2xl border-t-8 border-amber-600 dark:border-stone-700">
                 <h3 class="text-xl font-black mb-4 dark:text-amber-400 text-maroon uppercase tracking-widest border-b pb-4 dark:border-stone-800">Bulk Import</h3>
-                <p class="text-[10px] text-orange-600 dark:text-stone-400 mb-4 font-mono font-bold bg-orange-100 dark:bg-stone-800 p-2 rounded">FORMAT: ID, Points (Points Optional)</p>
-                <textarea id="import-area" rows="6" placeholder="STUDENT_A, 5&#10;STUDENT_B"
+                <p class="text-[10px] text-orange-600 dark:text-stone-400 mb-4 font-mono font-bold bg-orange-100 dark:bg-stone-800 p-2 rounded">FORMAT: ID (1 capital letter + 6 digits), Points (Points Optional)</p>
+                <textarea id="import-area" rows="6" placeholder="A123456, 5&#10;B234567"
                           class="w-full border-4 p-4 rounded-xl text-sm font-mono bg-orange-50 dark:bg-stone-800 dark:border-stone-700 mb-6 outline-none focus:border-amber-500 dark:text-white transition shadow-inner resize-none"></textarea>
                 <button onclick="importStudents()" class="w-full bg-stone-800 text-white py-4 rounded-xl font-black hover:bg-stone-600 transition shadow-xl uppercase tracking-widest border-b-4 border-black/60">
                     Process CSV
@@ -321,7 +456,7 @@
 
     <div id="admin-create-page" class="hidden p-6 max-w-2xl mx-auto">
         <div class="flex items-center gap-4 mb-8">
-            <button onclick="openAdminProfilesPage()" class="bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Profiles</button>
+            <button onclick="openAdminProfilesPage()" style="--kh-bg:#e7e5e4;--kh-fg:#292524;" class="btn-key bg-stone-200 text-stone-800 px-5 py-2 rounded-xl font-black hover:bg-stone-300 transition shadow-md uppercase tracking-widest text-xs">← Back to Profiles<span class="keyhint">Esc</span></button>
             <h2 class="text-3xl font-black text-maroon dark:text-amber-500">Create Admin Profile</h2>
         </div>
 
@@ -333,8 +468,8 @@
                 <input id="new-admin-year" type="number" placeholder="Birth Year (YYYY)" onkeydown="if(event.key==='Enter') { event.preventDefault(); document.getElementById('new-admin-pass').focus(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
                 <input id="new-admin-pass" type="password" placeholder="Custom Password (Optional)" onkeydown="if(event.key==='Enter') { event.preventDefault(); createAdmin(); }" class="w-full border-2 p-3 rounded-xl outline-none focus:border-amber-500 bg-orange-50 dark:bg-stone-800 dark:border-stone-700 dark:text-white font-bold transition">
             </div>
-            <button onclick="createAdmin()" class="w-full bg-stone-800 text-white py-4 rounded-xl font-black hover:bg-stone-600 transition shadow-xl uppercase tracking-widest border-b-4 border-black/60">
-                Register Admin
+            <button onclick="createAdmin()" style="--kh-bg:#292524;--kh-fg:#fff;" class="btn-key w-full bg-stone-800 text-white py-4 rounded-xl font-black hover:bg-stone-600 transition shadow-xl uppercase tracking-widest border-b-4 border-black/60">
+                Register Admin<span class="keyhint">Enter</span>
             </button>
         </div>
     </div>
@@ -347,7 +482,7 @@
                     <h3 class="text-xl font-black text-white tracking-widest uppercase">🎁 Redeem</h3>
                     <p id="redeem-sub" class="text-xs font-bold text-blue-200 tracking-widest uppercase"></p>
                 </div>
-                <button onclick="closeRedeem()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+                <button onclick="closeRedeem()" style="--kh-bg:#1e40af;--kh-fg:#fff;" class="btn-key text-white text-2xl font-black hover:text-red-300 px-2">✕<span class="keyhint">Esc</span></button>
             </div>
             <div id="redeem-body" tabindex="-1" class="p-5 overflow-y-auto outline-none"></div>
         </div>
@@ -357,13 +492,13 @@
         <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500">
             <div class="bg-blue-800 p-5 flex justify-between items-center border-b-4 border-blue-500">
                 <h3 class="text-xl font-black text-white tracking-widest uppercase">ReC · Code Checker</h3>
-                <button onclick="closeRec()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+                <button onclick="closeRec()" style="--kh-bg:#1e40af;--kh-fg:#fff;" class="btn-key text-white text-2xl font-black hover:text-red-300 px-2">✕<span class="keyhint">Esc</span></button>
             </div>
             <div class="p-5">
                 <label class="text-xs font-black uppercase tracking-widest text-stone-600 dark:text-stone-300">Coupon code (case sensitive)</label>
                 <input id="rec-input" type="text" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();submitRec();}" placeholder="Paste the coupon code" class="mt-2 w-full p-3 rounded-xl border-2 border-amber-200 dark:border-stone-700 bg-white dark:bg-stone-800 font-mono font-bold outline-none focus:border-blue-500">
                 <p id="rec-error" class="mt-3 min-h-[1.25rem] text-sm font-bold text-red-600 dark:text-red-400"></p>
-                <button onclick="submitRec()" class="mt-2 w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-blue-950 shadow-lg">Validate</button>
+                <button onclick="submitRec()" style="--kh-bg:#1d4ed8;--kh-fg:#fff;" class="btn-key mt-2 w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-blue-900 shadow-lg">Validate<span class="keyhint">Enter</span></button>
             </div>
         </div>
     </div>
@@ -374,7 +509,7 @@
                 <h3 class="text-xl font-black text-white tracking-widest uppercase">Redeem Successful</h3>
             </div>
             <div id="rec-success-body" class="p-5"></div>
-            <div class="px-5 pb-5"><button id="rec-ok" onclick="closeRecSuccess()" class="w-full py-3 bg-green-700 hover:bg-green-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-green-950 shadow-lg">OK</button></div>
+            <div class="px-5 pb-5"><button id="rec-ok" onclick="closeRecSuccess()" style="--kh-bg:#15803d;--kh-fg:#fff;" class="btn-key w-full py-3 bg-green-700 hover:bg-green-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-green-900 shadow-lg">OK<span class="keyhint">Enter</span></button></div>
         </div>
     </div>
 
@@ -382,13 +517,13 @@
         <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[92vh]">
             <div class="bg-blue-800 p-4 flex justify-between items-center border-b-4 border-blue-500">
                 <h3 class="text-lg font-black text-white tracking-widest uppercase">QR Code</h3>
-                <button onclick="closeQR()" class="text-white text-2xl font-black hover:text-red-300 px-2">✕</button>
+                <button onclick="closeQR()" style="--kh-bg:#1e40af;--kh-fg:#fff;" class="btn-key text-white text-2xl font-black hover:text-red-300 px-2">✕<span class="keyhint">Esc</span></button>
             </div>
             <div class="p-4 overflow-y-auto text-center">
                 <img id="qr-img" alt="Coupon QR code" class="mx-auto bg-white rounded-xl shadow max-w-full" style="max-height:60vh">
                 <p class="mt-3 text-xs font-bold text-stone-500 dark:text-stone-400">A printable PNG was sent to your browser's downloads. Print it as it is.</p>
                 <div class="mt-4 flex gap-3">
-                    <button onclick="downloadQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">Download again</button>
+                    <button onclick="downloadQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">Download again</button>
                     <button id="qr-close" onclick="closeQR()" class="flex-1 px-4 py-2 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700 text-[10px] font-black uppercase tracking-widest transition">Close</button>
                 </div>
             </div>
@@ -396,8 +531,8 @@
     </div>
 
     <div id="profile-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-orange-50 dark:bg-stone-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border-4 border-amber-500 flex flex-col max-h-[630px]">
-            <div class="bg-maroon p-6 flex justify-between items-center border-b-4 border-amber-600 relative overflow-hidden">
+        <div class="bg-orange-50 dark:bg-stone-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border-4 border-amber-500 flex flex-col max-h-[630px]" id="profile-box">
+            <div id="profile-head" class="bg-maroon p-6 flex justify-between items-center border-b-4 border-amber-600 relative overflow-hidden">
                 <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiPjwvcmVjdD4KPC9zdmc+')] opacity-20"></div>
                 <div class="relative z-10">
 				    <h3 class="text-3xl font-black text-white tracking-tighter" id="modal-id">---</h3>
@@ -409,10 +544,10 @@
                     <div>
                         <p class="text-4xl font-black text-amber-400"><span id="modal-points">0</span> 🪙</p>
                     </div>
-                    <button onclick="closeModal()" class="bg-black/40 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition font-black text-xl border-2 border-white/20">✕</button>
+                    <button onclick="closeModal()" style="--kh-bg:rgba(28,25,23,.85);--kh-fg:#fff;" class="btn-key bg-black/40 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition font-black text-xl border-2 border-white/20">✕<span class="keyhint">Esc</span></button>
                 </div>
             </div>
-			<div class="p-6 flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
+			<div id="profile-body" class="p-6 flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
 			    <div class="bg-white dark:bg-stone-800 rounded-2xl p-4 shadow-inner border border-orange-200 dark:border-stone-700 flex flex-col min-h-0 h-full">
 			        <div class="flex-1 min-h-0 relative">
 			            <canvas id="historyChart"></canvas>
@@ -579,7 +714,9 @@
                 auth.setPersistence(firebase.auth.Auth.Persistence.NONE);   // every launch asks for the passcode again
                 fbReady = true;
             } catch (e) {
-                document.getElementById('org-error').textContent = 'Cloud database is not set up yet ().';
+                document.getElementById('org-error').textContent = (typeof firebase === 'undefined')
+                    ? "Can't reach the cloud database. Check your internet connection and reload the page."
+                    : 'Cloud database setup problem: ' + ((e && e.message) || 'unknown error');
             }
         }
 
@@ -626,12 +763,14 @@
         async function orgLogin() {
             const id = document.getElementById('org-id-input').value.trim(), pass = document.getElementById('org-pass-input').value;
             const btn = document.getElementById('org-login-btn');
+            if (btn.disabled || orgReady) return;   // a login is already running (e.g. auto-login + a click)
             orgError('');
-            if (!fbReady) return orgError('Cloud database is not set up yet (paste your Firebase config into FIREBASE_CONFIG).');
+            if (!fbReady) return orgError((typeof firebase === 'undefined') ? "Can't reach the cloud database. Check your internet connection and reload the page." : 'Cloud database is not set up correctly. Contact the owner.');
             if (!/^[A-Za-z0-9]{6}$/.test(id)) return orgError('Organisation ID must be exactly 6 letters or digits.');
             if (!pass) return orgError('Enter the passcode.');
-            btn.disabled = true; btn.textContent = 'Checking…';
+            btn.disabled = true; document.getElementById('org-login-btn-label').textContent = 'Checking…';
             try {
+                if (pendingWrites > 0) await Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 4000))]).catch(() => {});
                 await auth.signInWithEmailAndPassword(id.toLowerCase() + '@' + ORG_EMAIL_DOMAIN, pass);
                 orgId = id;
                 let res;
@@ -647,7 +786,7 @@
                     : c === 'auth/too-many-requests' ? 'Too many attempts. Wait a few minutes and try again.'
                     : 'Wrong Organisation ID or passcode.');
                 document.getElementById('org-pass-input').select();
-            } finally { btn.disabled = false; btn.textContent = 'Login'; }
+            } finally { btn.disabled = false; document.getElementById('org-login-btn-label').textContent = 'Login'; }
         }
         function startOrg(v, sMap, lMap) {
             syncedStudents = sMap;
@@ -685,7 +824,7 @@
             document.getElementById('org-exit-btn').classList.add('hidden');
             ['profile-modal', 'redeem-modal', 'rec-modal', 'rec-success-modal', 'qr-modal'].forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); });
             performAdminLogout();
-            if (auth) auth.signOut();
+            if (auth) Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(() => { if (!orgReady) auth.signOut(); });   // let unsent saves finish first
             renderLeaderboard(); updateLastReset();
             document.querySelectorAll('#user-page, #admin-page, #admin-register-page, #admin-create-page, #admin-login-page, #admin-profiles-page').forEach(p => p.classList.add('hidden'));
             document.getElementById('nav-right').classList.add('hidden');
@@ -697,6 +836,7 @@
 
         // ---- backup: export everything of this organisation to a file on this device, and load it back ----
         function exportAllData() {
+            if (guestBlocked('export data')) return;
             if (!orgReady) return;
             const data = { app: 'PointSystem', format: 1, orgId, exportedAt: new Date().toISOString(),
                 students, admins, ledger: ledgerCache, lastResetDate };
@@ -709,6 +849,7 @@
             alertAfterPaint(`Backup downloaded: ${students.length} students, ${admins.length} admins.`);
         }
         function loadAllData() {
+            if (guestBlocked('load data')) return;
             if (!orgReady) return;
             document.getElementById('load-file-input').click();
         }
@@ -718,12 +859,13 @@
             const r = new FileReader();
             r.onload = () => {
                 let d; try { d = JSON.parse(r.result); } catch (e) { return alert('This file is not a valid backup.'); }
-                if (!d || d.app !== 'PointSystem' || !Array.isArray(d.students) || !Array.isArray(d.admins) || d.students.some(s => !s || typeof s.id !== 'string'))
+                if (!d || d.app !== 'PointSystem' || !Array.isArray(d.students) || !Array.isArray(d.admins) || d.students.some(s => !s || typeof s.id !== 'string' || typeof s.points !== 'number' || !isFinite(s.points)) || d.admins.some(a => !a || ['fname', 'lname', 'year', 'pass'].some(k => typeof a[k] !== 'string')))
                     return alert('This file is not a PointSystem backup.');
                 const other = d.orgId && d.orgId !== orgId ? ` (made from organisation ${d.orgId})` : '';
                 if (!confirm(`Replace ALL data of organisation ${orgId} with this backup${other}: ${d.students.length} students, ${d.admins.length} admins?`)) return;
                 students = d.students; admins = d.admins;
-                Coupons.saveLedger(d.ledger && typeof d.ledger === 'object' ? d.ledger : {});
+                const lg = {}; if (d.ledger && typeof d.ledger === 'object') Object.keys(d.ledger).forEach(k => { if (/^[A-Za-z0-9_-]+$/.test(k) && d.ledger[k] && typeof d.ledger[k] === 'object') lg[k] = d.ledger[k]; });
+                Coupons.saveLedger(lg);
                 lastResetDate = d.lastResetDate || 'Never';
                 activeID = null;
                 saveAdmins(); dbSet('lastResetDate', lastResetDate); save();
@@ -750,8 +892,17 @@
         let activeID = null;
         let chartInstance = null;
         let loggedInAdmin = ""; // Track who is logged in
-        let isGuestSession = false; // Guests are blocked from processing redemptions
+        let isGuestSession = false; // Guests are restricted to +/- point changes only (see guestBlocked)
         let loggedInAdminProfile = null; // {fname, lname, year} of the registered admin (null for guest/none)
+
+        // Guest admins may only search students and adjust their points (+/-). Everything else that
+        // touches redemptions, admin profiles/passcodes, student import, or whole-org data is off-limits.
+        // Returns true (and alerts) if the current session is a blocked guest, so callers can `return` early.
+        function guestBlocked(action) {
+            if (!isGuestSession) return false;
+            alertAfterPaint(`Guest admins cannot ${action}. Log in as a registered admin.`);
+            return true;
+        }
 
         // --- DATE FORMATTER ---
         function getFormattedDate() {
@@ -1267,6 +1418,9 @@
         })();
 
         // --- REDEEM / REC UI ---
+        const TOUCH = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        const NARROW = !!(window.matchMedia && window.matchMedia('(max-width: 767px)').matches);
+        function softFocus(id, delay) { if (TOUCH) return; setTimeout(() => { const el = document.getElementById(id); if (el) el.focus(); }, delay || 0); }
         const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const RD = { tier: null, no: 0, picked: new Set() };
         const rdBody = () => document.getElementById('redeem-body');
@@ -1305,7 +1459,18 @@
                 return;
             }
             if (!rec.classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeRec(); } return; }
-            if (red.classList.contains('hidden')) return;
+            if (red.classList.contains('hidden')) {
+                // nothing above is open: these are the rest of Escape's targets, lowest priority first
+                if (e.key !== 'Escape') return;
+                const visible = id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); };
+                e.preventDefault();
+                if (visible('profile-modal')) return closeModal();
+                if (visible('admin-profile-view')) return closeAdminProfileView();
+                if (visible('point-controls')) return closeProfile();
+                if (visible('admin-create-page')) return openAdminProfilesPage();
+                if (visible('admin-profiles-page') || visible('admin-register-page')) return showPage('admin-page');
+                return;
+            }
             const tag = e.target.tagName;
             if (e.key === 'Escape') { e.preventDefault(); return closeRedeem(); }
             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -1321,6 +1486,19 @@
             }
         });
 
+
+        // Android/browser Back should follow the same navigation priority as Escape.
+        (function installAppBackNavigation() {
+            if (!window.history || !window.addEventListener) return;
+            try { window.history.pushState({ pointSystemView: true }, '', window.location.href); } catch (e) {}
+            window.addEventListener('popstate', function () {
+                document.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: 'Escape', bubbles: true, cancelable: true
+                }));
+                try { window.history.pushState({ pointSystemView: true }, '', window.location.href); } catch (e) {}
+            });
+        })();
+
         function closeRedeem() { document.getElementById('redeem-modal').classList.add('hidden'); closeQR(); }
 
         function renderRedeemTiers() {
@@ -1335,7 +1513,7 @@
                 REDEEM_LISTS[t].forEach((b, i) => {
                     const sp = usedNow[L + (i + 1)], gone = !!sp && [...sp].filter(k => k < Coupons.usable(b)).length >= Coupons.usable(b);   // nothing left this month
                     const can = open && !gone;
-                    h += `<tr ${can ? `onclick="pickBenefit('${t}', ${i + 1})"` : ''} class="${can ? 'rd-nav ' : ''}border-t border-orange-200 dark:border-stone-700 ${can ? 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/40' : 'opacity-40'}">
+                    h += `<tr ${can ? `onclick="pickBenefit('${t}', ${i + 1})"` : ''} class="${can ? 'rd-nav ' : ''}border-t border-orange-200 dark:border-stone-700 ${can ? 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40' : 'opacity-40'}">
                         <td class="p-2 font-mono font-black">${L}${i + 1}</td><td class="p-2 font-bold">${esc(b.l)}</td><td class="p-2 text-xs">${esc(b.d)}${gone ? ' <span class="font-black text-red-600 dark:text-red-400">Used this month</span>' : ''}</td></tr>`;
                 });
                 h += '</tbody></table></div>';
@@ -1362,7 +1540,7 @@
             const n = RD.picked.size, cost = unit * n, after = s.points - cost, ok = n > 0 && after >= 0;
             const id = L + RD.no + (n ? Coupons.perkId([...RD.picked]) : '··');
             const fixed = !!b.all;   // compulsory benefit: every option is ticked and locked
-            let h = `<button onclick="renderRedeemTiers()" class="${BTN_GHOST}">← Back <span class="opacity-60">(←)</span></button>
+            let h = `<button onclick="renderRedeemTiers()" class="${BTN_GHOST}">← Back <span class="opacity-60 kbd-hint">(←)</span></button>
                 <h4 class="mt-4 text-lg font-black text-maroon dark:text-amber-500">${esc(b.l)} <span class="font-mono text-sm text-blue-700 dark:text-blue-400">${id}</span></h4>
                 <p class="text-xs text-stone-500 dark:text-stone-400">${esc(b.d)}</p>
                 <p class="text-xs font-bold text-blue-700 dark:text-blue-400 mb-3">${fixed ? `This benefit has no choices: all ${usable} options are compulsory · ${unit * usable} 🪙 in total.` : `Pick at least 1 and up to ${usable} option${usable > 1 ? 's' : ''} · ${unit} 🪙 each (max ${unit * usable} 🪙).`}</p>
@@ -1370,7 +1548,7 @@
                 <table class="w-full text-left text-sm border-collapse"><thead><tr class="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400"><th class="p-2 w-10"></th><th class="p-2">Option</th><th class="p-2 text-right">Cost</th></tr></thead><tbody>`;
             labels.forEach((lab, i) => {
                 const off = i >= usable, spent = usedSet.has(i), lock = fixed || off || spent;   // greyed out: not offered, compulsory, or already used this month
-                h += `<tr ${lock ? '' : `onclick="togglePerk(${i})"`} class="${lock ? '' : 'rd-nav cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/40'} ${off || spent ? 'opacity-40' : ''} border-t border-orange-200 dark:border-stone-700">
+                h += `<tr ${lock ? '' : `onclick="togglePerk(${i})"`} class="${lock ? '' : 'rd-nav cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40'} ${off || spent ? 'opacity-40' : ''} border-t border-orange-200 dark:border-stone-700">
                     <td class="p-2"><input type="checkbox" ${RD.picked.has(i) ? 'checked' : ''} ${lock ? 'disabled' : ''} class="pointer-events-none w-4 h-4"></td>
                     <td class="p-2 font-bold">${esc(lab)}</td><td class="p-2 text-right font-black">${off ? '—' : spent ? 'Used' : unit + ' 🪙'}</td></tr>`;
             });
@@ -1380,7 +1558,7 @@
                     <p class="text-sm font-black">${n} selected · Cost <span class="text-red-600 dark:text-red-400">${cost}</span> 🪙 · Balance after <span class="${after < 0 ? 'text-red-600 dark:text-red-400' : ''}">${after}</span> 🪙</p>
                 </div>
                 <p id="redeem-err" class="mt-3 min-h-[1.25rem] text-sm font-bold text-red-600 dark:text-red-400">${n && after < 0 ? 'Not enough points for this selection.' : ''}</p>
-                <button onclick="confirmRedeem()" ${ok ? '' : 'disabled'} class="rd-nav mt-2 w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest border-b-4 border-blue-950 shadow-lg ${ok ? '' : 'opacity-40 cursor-not-allowed'}">🎁 Redeem for ${cost} 🪙</button>`;
+                <button onclick="confirmRedeem()" ${ok ? '' : 'disabled'} class="rd-nav mt-2 w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest border-b-4 border-blue-900 shadow-lg ${ok ? '' : 'opacity-40 cursor-not-allowed'}">🎁 Redeem for ${cost} 🪙</button>`;
             rdBody().innerHTML = h; rdReady();
         }
 
@@ -1398,8 +1576,8 @@
                 <p class="mt-3 text-sm text-stone-500 dark:text-stone-400">Code is copied to Clipboard!, Click the button below to copy again.</p>
 				<p id="redeem-qr-msg" class="mt-2 min-h-[1rem] text-xs font-bold text-red-600 dark:text-red-400"></p>
 				<div class="mt-4 flex gap-3">
-                    <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">Copy code</button>
-                    <button onclick="showCouponQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-950">QR code</button>
+                    <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">Copy code</button>
+                    <button onclick="showCouponQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">QR code</button>
                     <button id="redeem-done" onclick="closeRedeem()" class="flex-1 ${BTN_GHOST}">Done</button>
                 </div></div>`;
             rdReady(); document.getElementById('redeem-done').focus(); 
@@ -1476,12 +1654,13 @@
         function copyRedeemCode() { navigator.clipboard && navigator.clipboard.writeText(document.getElementById('redeem-code').textContent); alert("Copied to Clipboard!")}
 
         function openRec() {
+            if (guestBlocked('use the Redemption Checker')) return;
             document.getElementById('rec-error').textContent = '';
             document.getElementById('rec-modal').classList.remove('hidden');
             setTimeout(() => document.getElementById('rec-input').focus(), 50);
         }
-        function closeRec() { document.getElementById('rec-modal').classList.add('hidden'); if (!activeID) setTimeout(() => document.getElementById('admin-search-input').focus(), 50); }
-        function closeRecSuccess() { document.getElementById('rec-success-modal').classList.add('hidden'); if (!activeID) setTimeout(() => document.getElementById('admin-search-input').focus(), 50); }
+        function closeRec() { document.getElementById('rec-modal').classList.add('hidden'); if (!activeID) softFocus('admin-search-input', 50); }
+        function closeRecSuccess() { document.getElementById('rec-success-modal').classList.add('hidden'); if (!activeID) softFocus('admin-search-input', 50); }
         function submitRec() {
             const input = document.getElementById('rec-input'), errEl = document.getElementById('rec-error');
             const r = Coupons.redeemCode(input.value);
@@ -1543,16 +1722,32 @@
             // Hide admin banner if returning to public ranking view
             if (pageId === 'user-page') {
                 document.getElementById('admin-status-container').classList.add('hidden');
-                setTimeout(() => document.getElementById('frontend-search').focus(), 50);
+                softFocus('frontend-search', 50);
             } else if (pageId === 'admin-page') {
+                const actionRow = document.getElementById('admin-btns');
+                // Restore the dashboard actions after login/navigation - but NOT if a student profile is
+                // already open at this point (e.g. registerStudent() selects the new student, then calls
+                // showPage('admin-page') right after - that profile must stay the one thing shown).
                 if(!activeID) {
+                    actionRow.classList.remove('profile-open');
                     document.getElementById('admin-search-results').classList.remove('hidden');
                     adminLiveSearch();
+                } else {
+                    actionRow.classList.add('profile-open');
                 }
-                setTimeout(() => document.getElementById('admin-search-input').focus(), 50);
+                // Guest admins only get the student search + point controls; everything else on this
+                // dashboard is greyed out (functions themselves also refuse via guestBlocked()).
+                ['apr-btn', 'spr-btn', 'rec-btn', 'xpt-btn', 'load-btn', 'rmc-btn'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (!b) return;
+                    b.classList.toggle('opacity-40', isGuestSession);
+                    b.classList.toggle('pointer-events-none', isGuestSession);
+                });
+                softFocus('admin-search-input', 50);
             } else if (pageId === 'admin-login-page') {
+                setGuestPending(false);
                 adminLoginLiveSearch();
-                setTimeout(() => document.getElementById('admin-login-search-input').focus(), 50);
+                softFocus('admin-login-search-input', 50);
             }
         }
 
@@ -1567,21 +1762,49 @@
 		    }
 		}
 
+		let guestPending = false;   // true once guest mode has been triggered once (hides Year/Passcode)
+		function setGuestPending(on) {
+		    guestPending = on;
+		    document.getElementById('guest-hint').classList.toggle('hidden', !on);
+		    document.getElementById('auth-regfields').classList.toggle('hidden', on);
+		    document.getElementById('auth-guestfields').classList.toggle('hidden', !on);
+		}
+
+		// Two-stage guest entry: the FIRST Shift+Enter (or the Guest Admin Login button) just reveals
+		// guest mode (hides Year/Passcode, shows the "Registered Login" way back out); a SECOND
+		// Shift+Enter (or clicking the button again) actually proceeds to the guest passcode prompt.
+		function guestLoginStep() {
+		    if (!guestPending) { setGuestPending(true); return; }
+		    guestLogin();
+		}
+
 		function guestLogin() {
 		    if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
-		    const pass = prompt("Enter Secondary Passcode:");
+		    const fn = document.getElementById('auth-fname').value.trim().slice(0, 30);
+		    const ln = document.getElementById('auth-lname').value.trim().slice(0, 30);
+		    if (!fn || !ln) {                                   // names first
+		        setGuestPending(true);
+		        document.getElementById(fn ? 'auth-lname' : 'auth-fname').focus();
+		        return;
+		    }
+		    const pass = prompt("Enter Secondary Passcode - GUEST LOGIN:");
 		    if (pass === secondaryPasscode()) {
-                loggedInAdmin = "Admin";
-                loggedInAdminProfile = null; isGuestSession = true;
-                
-                // Update header status for Guest
-                document.getElementById('admin-status-display').innerText = "admin mode: guest";
-                document.getElementById('admin-status-container').classList.remove('hidden');
-                
+		        clearAuthFields();
+		        loggedInAdmin = "G-" + fn;                      // shown as "by G-fname" on every point change
+		        loggedInAdminProfile = null; isGuestSession = true;
+
+		        // Header status for a guest: G-fname lname (no birth year is kept)
+		        document.getElementById('admin-status-display').innerText = `admin mode: G-${fn} ${ln}`;
+		        document.getElementById('admin-status-container').classList.remove('hidden');
+
 		        showPage('admin-page');
 		    } else if (pass !== null) {
 		        alert("Incorrect Guest Password.");
-		    }
+				clearAuthFields();
+				setGuestPending(false);
+				document.getElementById('admin-login-search-input').focus();
+				
+			}
 		}
 
         // --- CUSTOM ADMINS LOGIC ---
@@ -1603,7 +1826,7 @@
             matches.forEach((a) => {
                 const btn = document.createElement('button');
                 btn.className = "admin-login-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
-                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${a.fname} ${a.lname}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${a.year}</span>`;
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${esc(a.fname)} ${esc(a.lname)}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${esc(a.year)}</span>`;
                 btn.onclick = () => {
                     document.getElementById('auth-fname').value = a.fname;
                     document.getElementById('auth-lname').value = a.lname;
@@ -1619,10 +1842,10 @@
             if(!btns.length) return;
             if(e.key === 'ArrowDown') { e.preventDefault(); adminLoginSearchIdx = Math.min(adminLoginSearchIdx + 1, btns.length - 1); updateAdminLoginHighlight(btns); }
             else if(e.key === 'ArrowUp') { e.preventDefault(); adminLoginSearchIdx = Math.max(adminLoginSearchIdx - 1, 0); updateAdminLoginHighlight(btns); }
-            else if(e.key === 'Enter') { 
-                e.preventDefault(); 
-                if(adminLoginSearchIdx >= 0) btns[adminLoginSearchIdx].click(); 
-                else btns[0].click(); 
+            else if(e.key === 'Enter') {
+                e.preventDefault();
+                if(adminLoginSearchIdx >= 0) btns[adminLoginSearchIdx].click();
+                else btns[0].click();
             }
         }
 
@@ -1638,8 +1861,14 @@
             const ln = document.getElementById('auth-lname').value.trim();
             const yr = document.getElementById('auth-year').value.trim();
             const pass = document.getElementById('auth-pass').value.trim();
+            setGuestPending(false);
 
-            if (!fn || !yr || !pass) return alert("Please fill required fields.");
+            if (!fn || !ln || !yr || !pass) {
+                alert("Please fill all four fields.");
+                clearAuthFields();
+                document.getElementById('admin-login-search-input').focus();
+                return;
+            }
             
             // Check Registered Admin Database Only
             const customMatch = admins.find(a => a.fname.toLowerCase() === fn.toLowerCase() && a.lname.toLowerCase() === ln.toLowerCase() && a.year === yr && a.pass === pass);
@@ -1656,6 +1885,8 @@
                 showPage('admin-page');
             } else {
                 alert("Authentication Failed. Incorrect Credentials or Profile not found.");
+				clearAuthFields();
+				document.getElementById('admin-login-search-input').focus();
             }
         }
 		
@@ -1664,18 +1895,25 @@
             document.getElementById('auth-lname').value = '';
             document.getElementById('auth-year').value = '';
             document.getElementById('auth-pass').value = '';
+            setGuestPending(false);
         }
 
         // --- NEW ADMIN PROFILES PAGE LOGIC ---
         let adminProfSearchIdx = -1;
         let activeAdminIdx = -1;
+        let activeAdminKey = null;   // who the open profile is (name + year), so edits still hit the right person if the list shifts
+        function findActiveAdminIdx() {
+            const k = activeAdminKey; if (!k) return -1;
+            return admins.findIndex(a => a.fname === k.fname && a.lname === k.lname && a.year === k.year);
+        }
 
         function openAdminProfilesPage() {
+            if (guestBlocked('manage Admin Profiles')) return;
             showPage('admin-profiles-page');
             document.getElementById('admin-profiles-search').value = '';
             closeAdminProfileView();
             adminProfilesLiveSearch();
-            setTimeout(() => document.getElementById('admin-profiles-search').focus(), 50);
+            softFocus('admin-profiles-search', 50);
         }
 
         function adminProfilesLiveSearch() {
@@ -1694,7 +1932,7 @@
             matches.forEach((a) => {
                 const btn = document.createElement('button');
                 btn.className = "admin-prof-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
-                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${a.fname} ${a.lname}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${a.year}</span>`;
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${esc(a.fname)} ${esc(a.lname)}</span> <span class="text-xs text-stone-500 bg-stone-100 dark:bg-stone-900 px-2 py-1 rounded font-bold">YR: ${esc(a.year)}</span>`;
                 btn.onclick = () => viewAdminProfile(a.index);
                 resultsDiv.appendChild(btn);
             });
@@ -1722,24 +1960,29 @@
         function viewAdminProfile(idx) {
             activeAdminIdx = idx;
             const a = admins[idx];
+            activeAdminKey = { fname: a.fname, lname: a.lname, year: a.year };
             document.getElementById('active-admin-name').innerText = `${a.fname} ${a.lname}`;
             document.getElementById('active-admin-year').innerText = a.year;
             
+            const search = document.getElementById('admin-profiles-search');
+            search.value = '';
+            search.blur();
             document.getElementById('admin-profiles-results').classList.add('hidden');
             document.getElementById('admin-profile-view').classList.remove('hidden');
         }
 
         function closeAdminProfileView() {
-            activeAdminIdx = -1;
+            activeAdminIdx = -1; activeAdminKey = null;
             document.getElementById('admin-profile-view').classList.add('hidden');
             document.getElementById('admin-profiles-results').classList.remove('hidden');
             document.getElementById('admin-profiles-search').value = '';
             adminProfilesLiveSearch();
-            setTimeout(() => document.getElementById('admin-profiles-search').focus(), 50);
+            softFocus('admin-profiles-search', 50);
         }
 
         
         function deleteAdminProfile() {
+            if (guestBlocked('delete Admin Profiles')) return;
             if(activeAdminIdx === -1) return;
             
             if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
@@ -1748,6 +1991,8 @@
             
             if (attempt === revMaster) {
                 if (confirm("Are you absolutely sure you want to PERMANENTLY delete this Admin Profile?")) {
+                    activeAdminIdx = findActiveAdminIdx();
+                    if (activeAdminIdx === -1) { alert("This admin profile no longer exists (it was changed on another device)."); closeAdminProfileView(); return; }
                     const del = admins[activeAdminIdx], me = loggedInAdminProfile;
                     const self = !!(me && del && del.fname === me.fname && del.lname === me.lname && del.year === me.year);
                     admins.splice(activeAdminIdx, 1);
@@ -1762,14 +2007,19 @@
         }
 
         function editAdminPassword() {
+            if (guestBlocked('edit admin passcodes')) return;
             if(activeAdminIdx === -1) return;
             if (!orgMasterPasscode) { alert("This organisation has no Master Passcode set up yet. Contact the owner."); return; }
             const revMaster = secondaryPasscode();
             const attempt = prompt("Enter Secondary Passcode to authorize change:");
             if (attempt === revMaster) {
-                const newPass = prompt("Enter new password for " + admins[activeAdminIdx].fname + ":");
+                const target = admins[findActiveAdminIdx()];
+                if (!target) { alert("This admin profile no longer exists."); closeAdminProfileView(); return; }
+                const newPass = prompt("Enter new password for " + target.fname + ":");
                 if (newPass !== null && newPass.trim() !== "") {
-                    admins[activeAdminIdx].pass = newPass.trim();
+                    const ei = findActiveAdminIdx();
+                    if (ei === -1) { alert("This admin profile no longer exists. Change cancelled."); closeAdminProfileView(); return; }
+                    admins[ei].pass = newPass.trim();
                     saveAdmins();
                     alert("Password successfully updated.");
                 } else if (newPass !== null) {
@@ -1781,11 +2031,13 @@
         }
 
         function openCreateAdminPage() {
+            if (guestBlocked('create Admin Profiles')) return;
             showPage('admin-create-page');
-            setTimeout(() => document.getElementById('new-admin-fname').focus(), 50);
+            softFocus('new-admin-fname', 50);
         }
 
         function createAdmin() {
+            if (guestBlocked('create Admin Profiles')) return;
             const fname = document.getElementById('new-admin-fname').value.trim();
             const lname = document.getElementById('new-admin-lname').value.trim();
             const year = document.getElementById('new-admin-year').value.trim();
@@ -1816,8 +2068,9 @@
         }
 
         function openRegistrationPage() {
+            if (guestBlocked('register or import students')) return;
             showPage('admin-register-page');
-            setTimeout(() => document.getElementById('reg-id').focus(), 50);
+            softFocus('reg-id', 50);
         }
 
         // --- CORE DATA OPERATIONS ---
@@ -1840,9 +2093,17 @@
             s.points = newTotal;
         }
 
+        // IDs are shown all over the page, so refuse characters that could break it
+        function idProblem(id) {
+            if (!/^[A-Z][0-9]{6}$/.test(id)) return 'Student ID must be 1 capital letter followed by 6 digits, e.g. A123456.';
+            return '';
+        }
+
         function registerStudent() {
-            const id = document.getElementById('reg-id').value.trim();
+            if (guestBlocked('register students')) return;
+            const id = document.getElementById('reg-id').value.trim().toUpperCase();
             if(!id) return;
+            const bad = idProblem(id); if (bad) return alert(bad);
             if(students.find(s => s.id === id)) return alert("ID Exists.");
             
             students.push(createStudent(id, CONFIG.STARTING_POINTS));
@@ -1853,16 +2114,18 @@
         }
 
         function importStudents() {
+            if (guestBlocked('import students')) return;
             const raw = document.getElementById('import-area').value.trim();
             if(!raw) return;
-            let added = 0;
+            let added = 0, skipped = 0;
             raw.split('\n').forEach(line => {
                 const parts = line.split(',').map(p => p.trim());
                 if(parts.length >= 1 && parts[0] !== "") {
-                    const id = parts[0];
-                    let pts = parseInt(parts[1]);
+                    const id = parts[0].toUpperCase();
+                    let pts = parseInt(parts[1], 10);
                     if(isNaN(pts)) pts = CONFIG.STARTING_POINTS;
-                    if(!students.find(s => s.id === id)) {
+                    if(idProblem(id) || students.find(s => s.id === id)) { skipped++; }
+                    else {
                         students.push(createStudent(id, pts));
                         added++;
                     }
@@ -1872,7 +2135,7 @@
             document.getElementById('import-area').value = '';
             closeProfile();
             showPage('admin-page');
-            alertAfterPaint(`Imported ${added} students.`);
+            alertAfterPaint(`Imported ${added} students.` + (skipped ? ` Skipped ${skipped} line(s): duplicate or invalid IDs.` : ''));
         }
 
         // Every "Monthly Reset" marker carries a number n. Entries after marker n belong to period n
@@ -1886,6 +2149,7 @@
         }
 
         function monthlyReset() {
+            if (guestBlocked('trigger a Monthly Reset')) return;
 		    if(!confirm("Reset month?")) return;
 
 		    students.forEach(s => {
@@ -1914,7 +2178,8 @@
 		}
 
         function deleteProfile() {
-            if(!activeID || !confirm("PERMANENTLY Delete?")) return;
+            if (guestBlocked('delete student profiles')) return;
+            if(!activeID || !confirm(`PERMANENTLY Delete ${activeID}? Their coupons are deleted too.`)) return;
             const gone = activeID;
             students = students.filter(s => s.id !== gone);
             const led = Coupons.loadLedger();
@@ -1941,10 +2206,16 @@
             matches.slice(0, 15).forEach((s) => {
                 const btn = document.createElement('button');
                 btn.className = "admin-result-btn w-full p-4 bg-white dark:bg-stone-800 border-2 border-orange-100 dark:border-stone-700 rounded-xl hover:border-amber-500 text-left transition flex justify-between items-center";
-                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${s.id}</span> <span class="font-bold text-stone-500 bg-stone-100 dark:bg-stone-900 px-3 py-1 rounded-full">${s.points} 🪙</span>`;
+                btn.innerHTML = `<span class="font-black text-lg text-maroon dark:text-amber-400">${esc(s.id)}</span> <span class="font-bold text-stone-500 bg-stone-100 dark:bg-stone-900 px-3 py-1 rounded-full">${s.points} 🪙</span>`;
                 btn.onclick = () => selectStudent(s.id);
                 resultsDiv.appendChild(btn);
             });
+            if (matches.length > 15) {
+                const more = document.createElement('p');
+                more.className = 'text-center text-xs font-bold text-stone-500 dark:text-stone-400 p-2';
+                more.textContent = `Showing 15 of ${matches.length} students. Type to narrow the list.`;
+                resultsDiv.appendChild(more);
+            }
         }
 
         function handleAdminSearchKey(e) {
@@ -1966,10 +2237,28 @@
             });
         }
 
+        function updateStudentProfilePermissions() {
+            const restricted = isGuestSession;
+            ['student-redeem-btn', 'student-delete-btn'].forEach(id => {
+                const b = document.getElementById(id);
+                if (!b) return;
+                b.disabled = restricted;
+                b.classList.toggle('guest-restricted', restricted);
+                b.setAttribute('aria-disabled', restricted ? 'true' : 'false');
+                b.title = restricted ? 'Unavailable in Guest Admin mode' : '';
+            });
+        }
+
         function selectStudent(id) {
             activeID = id;
+            const search = document.getElementById('admin-search-input');
+            search.value = '';
+            search.blur();
             document.getElementById('admin-search-results').classList.add('hidden');
             document.getElementById('point-controls').classList.remove('hidden');
+            document.getElementById('admin-btns').classList.add('profile-open');
+            document.getElementById('perk-grid').classList.add('profile-columns');
+            updateStudentProfilePermissions();
             updatePanel();
         }
 
@@ -1977,9 +2266,11 @@
             activeID = null;
             document.getElementById('point-controls').classList.add('hidden');
             document.getElementById('admin-search-results').classList.remove('hidden');
+            document.getElementById('admin-btns').classList.remove('profile-open');
+            document.getElementById('perk-grid').classList.remove('profile-columns');
             document.getElementById('admin-search-input').value = '';
             adminLiveSearch();
-            document.getElementById('admin-search-input').focus();
+            softFocus('admin-search-input');
         }
 
         function updatePanel() {
@@ -2007,15 +2298,15 @@
 		    // Configured visually as [2nd Place, 1st Place, 3rd Place]
 		    const config = [
 		        { data: top3[1], height: 'h-3/5', bg: 'bg-stone-300 dark:bg-stone-600', text: 'text-stone-700 dark:text-stone-200', emoji: '🥈' },
-		        { data: top3[0], height: 'h-full', bg: 'bg-amber-400 dark:bg-amber-500', text: 'text-stone-950', emoji: '🥇' },
+		        { data: top3[0], height: 'h-full', bg: 'bg-amber-400 dark:bg-amber-500', text: 'text-stone-900', emoji: '🥇' },
 		        { data: top3[2], height: 'h-1/3', bg: 'bg-orange-300 dark:bg-orange-800', text: 'text-orange-900 dark:text-orange-200', emoji: '🥉' }
 		    ];
 		
 		    podiumDiv.innerHTML = config.map(pos => {
 		        if (!pos.data) return `<div class="w-1/3"></div>`;
 		        return `
-		            <div class="w-1/3 flex flex-col items-center justify-end h-full gap-1 cursor-pointer group" onclick="openProfileModal('${pos.data.id}')">
-		                <span class="text-[13px] font-black truncate w-full text-center text-stone-500 font-bold dark:text-stone-400 group-hover:text-amber-500 transition">${pos.data.id}</span>
+		            <div class="w-1/3 flex flex-col items-center justify-end h-full gap-1 cursor-pointer group" data-id="${esc(pos.data.id)}" onclick="openProfileModal(this.dataset.id)">
+		                <span class="text-[13px] font-black truncate w-full text-center text-stone-500 font-bold dark:text-stone-400 group-hover:text-amber-500 transition">${esc(pos.data.id)}</span>
 		                <div class="w-full ${pos.height} ${pos.bg} rounded-t-xl shadow-lg flex flex-col items-center justify-start pt-2 transition-transform group-hover:-translate-y-1">
 		                </div>
 		            </div>
@@ -2083,17 +2374,17 @@
 		
 		function getTierBadge(points) {
 		    if (points >= CONFIG.TIERS.PLATINUM) {
-		        return `<span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">💎 Platinum</span>`;
+		        return `<span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">💎 Platinum</span>`;
 		    } else if (points >= CONFIG.TIERS.GOLD) {
-		        return `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥇 Gold</span>`;
+		        return `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥇 Gold</span>`;
 		    } else if (points >= CONFIG.TIERS.SILVER) {
 		        return `<span class="px-2.5 py-1 bg-stone-200 text-stone-800 dark:bg-stone-800/80 dark:text-stone-300 border border-stone-300 dark:border-stone-700 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥈 Silver</span>`;
 		    } else if (points > 0) {
-		        return `<span class="px-2.5 py-1 bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-400 border border-orange-300 dark:border-orange-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥉 Bronze</span>`;
+		        return `<span class="px-2.5 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-400 border border-orange-300 dark:border-orange-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🥉 Bronze</span>`;
 		    } else if (points === 0) {
 		        return `<span class="px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-900/80 dark:text-slate-400 border border-slate-300 dark:border-slate-800 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">⚪ Neutral</span>`;
 		    } else {
-		        return `<span class="px-2.5 py-1 bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400 border border-red-300 dark:border-red-900/50 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🚫 Negative</span>`;
+		        return `<span class="px-2.5 py-1 bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400 border border-red-300 dark:border-red-900/50 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center justify-center gap-1 w-24">🚫 Negative</span>`;
 		    }
 		}
 
@@ -2188,6 +2479,9 @@
 		        return true;
 		    });
 		
+		    renderPodium(ranked.slice(0, 3));
+		    renderTierStats(students);
+
 		    if (filtered.length === 0) { 
 		        list.innerHTML = "<p class='p-14 text-center font-black text-stone-400 dark:text-stone-500 uppercase tracking-widest text-sm bg-stone-50 dark:bg-stone-900/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-800'>No results found</p>"; 
 		        return; 
@@ -2199,12 +2493,12 @@
 		        const tierBadge = getTierBadge(s.points);
 		    
 		        return `
-		            <button class="front-result-btn w-full flex items-center justify-between p-4 bg-white dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-stone-700 transition rounded-2xl mb-2 border-2 border-transparent focus:outline-none shrink-0" onclick="openProfileModal('${s.id}')">
+		            <button class="front-result-btn w-full flex items-center justify-between p-4 bg-white dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-stone-700 transition rounded-2xl mb-2 border-2 border-transparent focus:outline-none shrink-0" data-id="${esc(s.id)}" onclick="openProfileModal(this.dataset.id)">
 		                <div class="flex items-center gap-4">
-		                    <div class="bg-amber-500 text-stone-950 font-black text-xl rounded-full h-12 w-12 flex items-center justify-center shadow-lg border-2 border-white dark:border-stone-900 drop-shadow-md shrink-0">
+		                    <div class="bg-amber-500 text-stone-900 font-black text-xl rounded-full h-12 w-12 flex items-center justify-center shadow-lg border-2 border-white dark:border-stone-900 drop-shadow-md shrink-0">
 		                        #${s.globalRank}
 		                    </div>
-		                    <h4 class="font-black text-xl text-maroon dark:text-amber-400 tracking-tight">${s.id}</h4>
+		                    <h4 class="font-black text-xl text-maroon dark:text-amber-400 tracking-tight">${esc(s.id)}</h4>
 		                </div>
 		                <div class="flex flex-col items-end justify-center shrink-0">
 		                    <div class="text-3xl font-black ${colorClass} drop-shadow-sm flex items-center gap-2 mb-1">
@@ -2214,8 +2508,6 @@
 		                </div>
 		            </button>`;
 		    }).join('');
-			renderPodium(ranked.slice(0, 3)); 
-    		renderTierStats(students);
 		}
 		
         function frontEndSearch() { renderLeaderboard(); }
@@ -2228,7 +2520,10 @@
             else if(e.key === 'Enter') { 
                 e.preventDefault(); 
                 if(frontSearchIdx >= 0) btns[frontSearchIdx].click(); 
-                else btns[0].click(); 
+                else btns[0].click();
+                const search = document.getElementById('frontend-search');
+                search.value = '';
+                search.blur();
             }
         }
 
@@ -2243,6 +2538,8 @@
         function openProfileModal(id) {
             const s = students.find(x => x.id === id);
             if(!s) return;
+            const publicSearch = document.getElementById('frontend-search');
+            if (publicSearch) { publicSearch.value = ''; publicSearch.blur(); }
             
             document.getElementById('modal-id').innerText = s.id;
             document.getElementById('modal-points').innerText = s.points;
@@ -2259,8 +2556,8 @@
 			        histList.innerHTML += `
 			            <div class="flex justify-between items-center bg-amber-500/10 dark:bg-amber-500/5 p-2 rounded-xl border border-dashed border-amber-500/30 my-1">
 			                <div class="w-full text-center">
-			                    <p class="font-black text-xs uppercase tracking-widest text-amber-600 dark:text-amber-500">Monthly Reset <span class="opacity-70 text-[9px]">(BY ${h.admin || 'System'})</span></p>
-			                    <p class="text-[9px] text-stone-400 font-mono uppercase">${h.date}</p>
+			                    <p class="font-black text-xs uppercase tracking-widest text-amber-600 dark:text-amber-500">Monthly Reset <span class="opacity-70 text-[9px]">(BY ${esc(h.admin || 'System')})</span></p>
+			                    <p class="text-[9px] text-stone-400 font-mono uppercase">${esc(h.date)}</p>
 			                </div>
 			            </div>`;
 			    } else {
@@ -2271,8 +2568,8 @@
 			        histList.innerHTML += `
 			            <div class="flex justify-between items-center bg-stone-50 dark:bg-stone-900 p-3 rounded-xl border border-stone-100 dark:border-stone-700">
 			                <div>
-			                    <p class="font-bold text-sm text-stone-800 dark:text-stone-200">${h.reason} <span class="text-[10px] text-stone-500 opacity-80 uppercase ml-1">(BY ${h.admin || 'System'})</span></p>
-			                    <p class="text-[10px] text-stone-400 font-mono uppercase">${h.date}</p>
+			                    <p class="font-bold text-sm text-stone-800 dark:text-stone-200">${esc(h.reason)} <span class="text-[10px] text-stone-500 opacity-80 uppercase ml-1">(BY ${esc(h.admin || 'System')})</span></p>
+			                    <p class="text-[10px] text-stone-400 font-mono uppercase">${esc(h.date)}</p>
 			                </div>
 			                <div class="text-right">
 			                    <p class="font-black ${color} text-lg">${sign}${h.change}</p>
@@ -2288,7 +2585,7 @@
 
         function closeModal() {
             document.getElementById('profile-modal').classList.add('hidden');
-            document.getElementById('frontend-search').focus();
+            softFocus('frontend-search');
         }
 
 
@@ -2467,7 +2764,7 @@
                         navActionButton.innerText = "Admin+";
                         navActionButton.setAttribute("onclick", "checkAdminGate()");
                         // Updated line below: using w-32 and removing px-5/min-w
-                        navActionButton.className = "w-28 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center";
+                        navActionButton.className = "w-28 py-2 bg-amber-600 hover:bg-amber-500 text-stone-900 font-black rounded-lg transition shadow-lg border-b-4 border-amber-800 uppercase tracking-widest text-center";
                     }
                 }
             }
@@ -2522,10 +2819,15 @@
             setInterval(Coupons.sweep, 60000);
             applyTheme();
             renderLeaderboard();
-            setTimeout(() => document.getElementById('frontend-search').focus(), 100);
+            updateStudentProfilePermissions();
+            softFocus('frontend-search', 100);
         }
         initUI();
         initOrgGate();
+        if (TOUCH || NARROW) {
+            const ph = { 'org-id-input': 'Organisation ID', 'frontend-search': 'Search student ID…', 'admin-search-input': 'Search student ID…', 'admin-login-search-input': 'Search admin…', 'admin-profiles-search': 'Search name…' };
+            Object.keys(ph).forEach(id => { const el = document.getElementById(id); if (el) el.placeholder = ph[id]; });
+        }
 	</script>
 </body>
 </html>
