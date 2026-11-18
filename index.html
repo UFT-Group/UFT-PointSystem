@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -155,11 +155,24 @@
                 padding-bottom: .3rem !important;
             }
         }
-        /* Hide the dashboard action row while a student profile is open (all screen sizes). */
-        #admin-btns.profile-open { display: none !important; }
+        /* On phones only, hide the six dashboard action buttons while a student profile is open. */
+        @media (max-width: 767px) {
+            #admin-btns.profile-open { display: none !important; }
+        }
         #perk-grid.profile-columns { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
         #perk-grid.profile-columns > div { min-width: 0; }
         .guest-restricted { opacity: .38 !important; filter: grayscale(1); cursor: not-allowed !important; }
+
+        /* Make hover feedback clearly visible without replacing each button's existing colour. */
+        @media (hover: hover) and (pointer: fine) {
+            button:not(:disabled):hover {
+                filter: brightness(1.18) saturate(1.2);
+                outline: 2px solid rgba(245, 158, 11, 0.9);
+                outline-offset: 1px;
+                box-shadow: 0 4px 12px rgba(120, 53, 15, 0.28);
+                transform: translateY(-1px);
+            }
+        }
 
     </style>
 </head>
@@ -278,7 +291,7 @@
                 <button onclick="processAdminLogin()" style="--kh-bg:#7f1d1d;--kh-fg:#fff;" class="btn-key w-full bg-maroon text-white py-4 rounded-xl font-black hover:bg-red-900 transition shadow-xl uppercase tracking-widest border-b-4 border-black/40 mb-4">
                     Authenticate<span class="keyhint">Enter</span>
                 </button>
-                <button onclick="guestLoginStep()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key w-full bg-stone-700 text-white py-3 rounded-xl font-bold hover:bg-stone-600 transition shadow-md uppercase tracking-widest text-xs">
+                <button id="guestadminlogin" onclick="guestLoginStep()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key w-full bg-stone-700 text-white py-3 rounded-xl font-bold hover:bg-stone-600 transition shadow-md uppercase tracking-widest text-xs">
                     Guest Admin Login<span class="keyhint">Shift+Enter</span>
                 </button>
                 <p id="guest-hint" class="hidden text-xs font-bold text-center text-amber-700 dark:text-amber-400 mt-3">Guest login: type your first and last name in the boxes above, then press Enter.</p>
@@ -1774,7 +1787,13 @@
 		// guest mode (hides Year/Passcode, shows the "Registered Login" way back out); a SECOND
 		// Shift+Enter (or clicking the button again) actually proceeds to the guest passcode prompt.
 		function guestLoginStep() {
-		    if (!guestPending) { setGuestPending(true); return; }
+		    if (!guestPending) {
+		        setGuestPending(true);
+		        // After Shift+Enter reveals guest mode, move keyboard focus to the guest button.
+		        const guestButton = document.getElementById('guestadminlogin');
+		        if (guestButton) guestButton.focus();
+		        return;
+		    }
 		    guestLogin();
 		}
 
