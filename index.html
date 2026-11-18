@@ -19,6 +19,10 @@
             } catch (e) {}
         })();
     </script>
+    <!-- open the connections to Google's servers early, so login on a slow phone network doesn't pay for them one by one -->
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -734,6 +738,9 @@
                 if (/PASTE_/.test(JSON.stringify(FIREBASE_CONFIG))) throw new Error('Cloudbase config not pasted yet.');
                 firebase.initializeApp(FIREBASE_CONFIG);
                 auth = firebase.auth(); db = firebase.firestore();
+                // Mobile networks/browsers often break Firestore's default streaming connection, which then sits and waits
+                // before falling back. This makes it detect that quickly and switch to long-polling instead.
+                try { db.settings({ experimentalAutoDetectLongPolling: true, useFetchStreams: false }); } catch (e) {}
                 auth.setPersistence(firebase.auth.Auth.Persistence.NONE);   // every launch asks for the passcode again
                 fbReady = true;
             } catch (e) {
@@ -796,6 +803,7 @@
                 if (pendingWrites > 0) await Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 4000))]).catch(() => {});
                 await auth.signInWithEmailAndPassword(id.toLowerCase() + '@' + ORG_EMAIL_DOMAIN, pass);
                 orgId = id;
+                document.getElementById('org-login-btn-label').textContent = 'Loading data…';
                 let res;
                 try { res = await Promise.all([orgDoc().get(), orgDoc().collection('students').get(), orgDoc().collection('ledger').get()]); }
                 catch (e) { await auth.signOut(); orgId = null; throw { code: e && e.code === 'permission-denied' ? 'ps/inactive' : 'auth/network-request-failed' }; }
