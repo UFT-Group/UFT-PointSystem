@@ -426,10 +426,10 @@
                 <div class="bg-stone-900 text-white p-8 rounded-3xl shadow-2xl mb-8 border-b-8 border-amber-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
                     <div class="flex justify-between items-start mb-6 border-b border-stone-700 pb-4 relative z-10">
-                        <button onclick="closeAdminProfileView()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close Profile<span class="keyhint">Esc</span></button>
+                        <button onclick="closeAdminProfileView()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close<span class="keyhint">Esc</span></button>
                         <div class="flex gap-2">
                             <button onclick="editAdminPassword()" class="bg-amber-600 hover:bg-amber-500 text-stone-900 text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Edit Password 🔑</button>
-                            <button onclick="deleteAdminProfile()" class="bg-red-900 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete Profile 🗑</button>
+                            <button onclick="deleteAdminProfile()" class="bg-red-900 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete 🗑</button>
                         </div>
                     </div>
                     <div class="flex justify-between items-center relative z-10">
@@ -595,7 +595,7 @@
         };
         const POS_LIST = [
             {l:"Attendance", p: 1 * multi, d:"Present the entire week(per week)."}, {l:"Uniform", p: 1 * multi, d:"Perfect Dress Code all week(per week)."}, {l:"Helping", p: 0.5 * multi, d:"Assisting peers or teachers(per day)."}, {l:"Polite", p: 0.5 * multi, d:"Exemplary manners(per day)."},
-            {l:"Curious", p: 1 * multi, d:"Researched/Studied/Completed Work deeply at home(per subject)."}, {l:"Grade Up", p: 2.5 * multi, d:"Improvement of +10% or more from last month(per subject)."}, {l:"Participation", p: 1.5 * multi, d:"Active engagement in extracurriculars(per week)."}, {l:"Extra Credit", p: 1 * multi, d:"Voluntary extra assignments(per assignment)."},
+            {l:"Curious", p: 1 * multi, d:"Research or Completed Work deeply at home(per subject)."}, {l:"Grade Up", p: 2.5 * multi, d:"Improvement of +10% or more from last month(per subject)."}, {l:"Participation", p: 1.5 * multi, d:"Active engagement in extracurriculars(per week)."}, {l:"Extra Credit", p: 1 * multi, d:"Voluntary extra assignments(per assignment)."},
             {l:"Organisation", p: 0.5 * multi, d:"Neat desk and Materials prepared before the teacher(per day)."}, {l:"Honesty", p: 1.0 * multi, d:"Telling the truth in difficult situations(per day)."}, {l:"Leadership", p: 0.5 * multi, d:"Guidance and Co-operation(per day)."}, {l:"Library", p: 1.0 * multi, d:"Constructive use of library(per use)."},
             {l:"Sports", p: 1.5 * multi, d:"Excellence or sportsmanship(per week)."}, {l:"Creativity", p: 1.5 * multi, d:"Out-of-the-box thinking(per week)."}, {l:"Proactivity", p: 1.0 * multi, d:"Focused in class, and active(per day)."}, {l:"Notes", p: 0.5 * multi, d:"Detailed and simple, with pace(per day)."},
             {l:"Early Bird", p: 1.0 * multi, d:"Assignment Submitted 1 or more days before the deadline(per assignment)."}, {l:"Peer Support", p: 0.5 * multi, d:"Tutoring or emotional support (confirmed by the peer)."}, {l:"1st Position", p: 2.0 * multi, d:"Topping an assessment or major event(per event)."}
@@ -1599,7 +1599,7 @@
                 <p class="mt-3 text-sm text-stone-500 dark:text-stone-400">Code is copied to Clipboard!, Click the button below to copy again.</p>
 				<p id="redeem-qr-msg" class="mt-2 min-h-[1rem] text-xs font-bold text-red-600 dark:text-red-400"></p>
 				<div class="mt-4 flex gap-3">
-                    <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">Copy code</button>
+                    <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">Copy</button>
                     <button onclick="showCouponQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">QR code</button>
                     <button id="redeem-done" onclick="closeRedeem()" class="flex-1 ${BTN_GHOST}">Done</button>
                 </div></div>`;
