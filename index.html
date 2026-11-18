@@ -44,7 +44,7 @@
         body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
         #redeem-body, #modal-history-list, #profile-body { overscroll-behavior: contain; }
         /* touchscreens: keyboard-only hints make no sense */
-        @media (pointer: coarse), (max-width: 767px) { .kbd-hint { display: none !important; } #frontend-search + p { display: none !important; } }
+        @media (pointer: coarse), (max-width: 767px) { .kbd-hint, .keyhint { display: none !important; } #frontend-search + p { display: none !important; } }
 
         @media (max-width: 767px) {
             html, body { overflow-x: hidden; }
@@ -105,6 +105,11 @@
             #perk-grid > div { max-height: 42vh !important; }
             #perk-grid > div > div:first-child { padding: .6rem .8rem !important; }
             #perk-grid > div > div:last-child { padding: .6rem !important; }
+            /* action cards: name, then points, then description (stacked) */
+            #pos-buttons > button > div:first-child, #neg-buttons > button > div:first-child { flex-direction: column !important; align-items: flex-start !important; justify-content: flex-start !important; gap: .15rem; }
+            /* student profile: slightly smaller Close / Redeem / Delete buttons */
+            #student-card > div:nth-child(2) button { font-size: 9px !important; padding: .3rem .55rem !important; }
+            #student-card > div:nth-child(2) > div { gap: .4rem !important; }
 
             /* admin profiles / register / create */
             #admin-profiles-page > div:first-child { flex-wrap: wrap; gap: .6rem; }
@@ -126,6 +131,10 @@
             #qr-modal > div { max-height: 94dvh !important; }
             #profile-box { max-height: 94dvh !important; border-radius: 1.25rem !important; }
             #profile-head { padding: .8rem 1rem !important; }
+            #profile-head { flex-shrink: 0 !important; gap: .5rem; }                 /* never let the header get squeezed/cut by the body */
+            #profile-head > div.relative:not(.text-right) { min-width: 0; flex: 1 1 auto; }
+            #profile-head #modal-id { overflow-wrap: anywhere; line-height: 1.15; }
+            #profile-body { min-height: 0; flex: 1 1 auto !important; }
             #profile-head #modal-id { font-size: 1.5rem !important; }
             #profile-head p { white-space: nowrap; font-size: .65rem !important; }
             #profile-head p.text-4xl { font-size: 1.35rem !important; }
