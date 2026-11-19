@@ -102,7 +102,7 @@
             #admin-search-results .admin-result-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
             #point-controls { max-height: none !important; padding-top: 1rem !important; margin-top: .5rem !important; }
             #point-controls > .grid { display: block !important; }          /* so the balance card can stay pinned while you scroll the buttons */
-            #student-card { max-height: none !important; padding: .9rem 1rem !important; border-radius: 1.25rem !important; position: sticky; top: .25rem; z-index: 20; }
+            #student-card { max-height: none !important; padding: .9rem 1rem !important; border-radius: 1.25rem !important; position: relative !important; top: auto !important; z-index: auto !important; }
             #student-card > div:nth-child(2) { margin-bottom: .6rem !important; padding-bottom: .6rem !important; }
             #student-card .text-4xl { font-size: 1.6rem !important; }
             #student-card .text-5xl { font-size: 2rem !important; }
@@ -363,8 +363,8 @@
                     <div id="student-card" class="max-h-[240px] bg-stone-900 text-white p-8 rounded-3xl shadow-2xl border-b-8 border-amber-500 relative overflow-hidden lg:sticky lg:top-4">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-bl-full"></div>
                         <div class="flex justify-between items-start mb-8 border-b border-stone-700 pb-4 relative z-10">
-                        	<button onclick="closeProfile()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close<span class="keyhint">Esc</span></button>
-							<div class="flex gap-4">
+                            <button onclick="closeProfile()" style="--kh-bg:#44403c;--kh-fg:#fff;" class="btn-key bg-stone-700 hover:bg-stone-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">✕ Close<span class="keyhint">Esc</span></button>
+                            <div class="flex gap-4">
 								<button id="student-redeem-btn" onclick="openRedeem()" class="bg-blue-700 hover:bg-blue-500 text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Redeem 🎁</button>
                             	<button id="student-delete-btn" onclick="deleteProfile()" class="bg-red-900 hover:bg-red-600 text-red-300 hover:text-white text-[10px] px-4 py-2 rounded-lg transition font-black uppercase tracking-widest shadow-md">Delete 🗑</button>
                         	</div>
