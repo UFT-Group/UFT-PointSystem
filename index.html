@@ -2228,8 +2228,14 @@
                     admins.splice(activeAdminIdx, 1);
                     saveAdmins();
                     closeAdminProfileView();
-                    if (self) { performAdminLogout(); alertAfterPaint("Your own admin profile was deleted. You have been logged out."); }
-                    else alertAfterPaint("Admin profile successfully deleted.");
+                    // No "successfully deleted" pop-up: a pop-up freezes the page and held back the cloud write, so the deleted
+                    // admin was not signed out on their device until it was dismissed. Deleting yourself signs you out first,
+                    // and the notice appears only after the delete has reached the cloud.
+                    if (self) {
+                        performAdminLogout();
+                        Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 4000))]).catch(() => {})
+                            .then(() => alertAfterPaint("Your own admin profile was deleted. You have been logged out."));
+                    }
                 }
             } else if (attempt !== null) {
                 alert("Authorization failed. Incorrect passcode.");
