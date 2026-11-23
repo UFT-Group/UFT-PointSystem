@@ -805,10 +805,20 @@
             syncedLedger = v; ledgerCache = {};
             for (const c in v) { const r = parseJ(v[c], null); if (r) ledgerCache[c] = r; }
         }
+        // If the registered admin who is logged in on THIS device no longer exists in the shared admin list
+        // (deleted from any other device), sign them out immediately. Guests are not in the list and are unaffected.
+        function kickDeletedAdmin() {
+            const me = loggedInAdminProfile;
+            if (!me || isGuestSession) return;
+            if (admins.some(x => x && x.fname === me.fname && x.lname === me.lname && x.year === me.year)) return;
+            performAdminLogout();
+            alertAfterPaint('Your admin profile was deleted. You have been signed out.');
+        }
         function onOrgRemote(snap) {
             if (snap.metadata.hasPendingWrites) return;
             const v = snap.data() || {};
             const a = parseJ(v.admins, []); if (Array.isArray(a) && JSON.stringify(a) !== JSON.stringify(admins)) admins = a;
+            if (typeof v.admins === 'string' && Array.isArray(a)) kickDeletedAdmin();   // an admin deleted on any device is signed out here at once
             const d = v.lastResetDate || 'Never'; if (d !== lastResetDate) { lastResetDate = d; updateLastReset(); }
             const mp = (v.masterPasscode || '').toString();
             if (mp !== orgMasterPasscode) { orgMasterPasscode = mp; try { sessionStorage.setItem(MASTER_PASS_KEY, orgMasterPasscode); } catch (e) {} }
