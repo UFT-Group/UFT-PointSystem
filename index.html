@@ -130,7 +130,7 @@
             #admin-profile-view .text-4xl, #admin-profile-view .text-5xl { font-size: 1.6rem !important; overflow-wrap: anywhere; }
 
             /* pop-ups: fit the visible screen */
-            #redeem-modal, #rec-modal, #rec-success-modal, #qr-modal, #profile-modal { padding: .6rem !important; }
+            #redeem-modal, #rec-modal, #rec-success-modal, #qr-modal, #scan-modal, #profile-modal { padding: .6rem !important; }
             #redeem-modal > div { max-height: 92dvh !important; border-radius: 1.25rem !important; }
             #redeem-body { padding: .8rem !important; }
             #redeem-body th, #redeem-body td { padding: .4rem .35rem !important; }
@@ -527,7 +527,10 @@
                 <label class="text-xs font-black uppercase tracking-widest text-stone-600 dark:text-stone-300">Coupon code (case sensitive)</label>
                 <input id="rec-input" type="text" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();submitRec();}" placeholder="Paste the coupon code" class="mt-2 w-full p-3 rounded-xl border-2 border-amber-200 dark:border-stone-700 bg-white dark:bg-stone-800 font-mono font-bold outline-none focus:border-blue-500">
                 <p id="rec-error" class="mt-3 min-h-[1.25rem] text-sm font-bold text-red-600 dark:text-red-400"></p>
-                <button onclick="submitRec()" style="--kh-bg:#1d4ed8;--kh-fg:#fff;" class="btn-key mt-2 w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-blue-900 shadow-lg">Validate<span class="keyhint">Enter</span></button>
+                <div class="mt-2 flex gap-4">
+                    <button onclick="submitRec()" style="--kh-bg:#1d4ed8;--kh-fg:#fff;" class="btn-key flex-1 py-3 bg-blue-700 hover:bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-blue-900 shadow-lg">Validate<span class="keyhint">Enter</span></button>
+                    <button id="rec-scan-btn" type="button" onclick="startScan()" class="px-5 py-3 bg-stone-500 hover:bg-stone-400 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-stone-700 shadow-lg">Scan</button>
+                </div>
             </div>
         </div>
     </div>
@@ -541,6 +544,27 @@
             <div class="px-5 pb-5"><button id="rec-ok" onclick="closeRecSuccess()" style="--kh-bg:#15803d;--kh-fg:#fff;" class="btn-key w-full py-3 bg-green-700 hover:bg-green-600 text-white font-black rounded-xl uppercase tracking-widest border-b-4 border-green-900 shadow-lg">OK<span class="keyhint">Enter</span></button></div>
         </div>
     </div>
+
+    <div id="scan-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+        <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[92vh]">
+            <div class="bg-blue-800 p-4 flex justify-between items-center border-b-4 border-blue-500">
+                <h3 class="text-lg font-black text-white tracking-widest uppercase">Scan Coupon</h3>
+                <button onclick="closeScan()" style="--kh-bg:#1e40af;--kh-fg:#fff;" class="btn-key text-white text-2xl font-black hover:text-red-300 px-2">✕<span class="keyhint">Esc</span></button>
+            </div>
+            <div class="p-4 overflow-y-auto text-center">
+                <div class="relative mx-auto bg-black rounded-xl overflow-hidden" style="aspect-ratio:1/1;max-height:55vh">
+                    <video id="scan-video" class="w-full h-full object-cover" playsinline muted autoplay></video>
+                    <div class="pointer-events-none absolute inset-[12%] border-4 border-white/70 rounded-2xl"></div>
+                </div>
+                <p id="scan-status" class="mt-3 min-h-[2.5rem] text-sm font-bold text-stone-600 dark:text-stone-300"></p>
+                <div class="mt-2 flex gap-3">
+                    <button type="button" onclick="pickScanFile()" class="flex-1 py-2 rounded-xl bg-stone-500 hover:bg-stone-400 text-white font-black uppercase tracking-widest text-xs border-b-4 border-stone-700">Upload image</button>
+                    <button type="button" onclick="closeScan()" class="flex-1 px-4 py-2 rounded-lg bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700 text-[10px] font-black uppercase tracking-widest transition">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input id="scan-file" type="file" accept="image/*" class="hidden" onchange="onScanFile(this)">
 
     <div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
         <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[92vh]">
@@ -855,7 +879,8 @@
             orgMasterPasscode = ''; try { sessionStorage.removeItem(MASTER_PASS_KEY); } catch (e) {}
             document.getElementById('org-badge').classList.add('hidden');
             document.getElementById('org-exit-btn').classList.add('hidden');
-            ['profile-modal', 'redeem-modal', 'rec-modal', 'rec-success-modal', 'qr-modal'].forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); });
+            closeScan();
+            ['profile-modal', 'redeem-modal', 'rec-modal', 'rec-success-modal', 'qr-modal', 'scan-modal'].forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); });
             performAdminLogout();
             if (auth) Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(() => { if (!orgReady) auth.signOut(); });   // let unsent saves finish first
             renderLeaderboard(); updateLastReset();
@@ -1485,6 +1510,7 @@
         function rdReady() { RD.nav = -1; rdHighlight(-1); rdBody().focus({ preventScroll: true }); }
         document.addEventListener('keydown', e => {
             const recOK = document.getElementById('rec-success-modal'), rec = document.getElementById('rec-modal'), red = document.getElementById('redeem-modal');
+            if (!document.getElementById('scan-modal').classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeScan(); } return; }   // scanner on top: only it reacts
             if (!document.getElementById('qr-modal').classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeQR(); } return; }   // QR window on top: only it reacts
             if (!recOK.classList.contains('hidden')) {                       // success popup: Enter / Space / Esc = OK
                 if (e.repeat || e.target.id === 'rec-input') return;      // ignore the Enter that just submitted the code
@@ -1692,7 +1718,7 @@
             document.getElementById('rec-modal').classList.remove('hidden');
             setTimeout(() => document.getElementById('rec-input').focus(), 50);
         }
-        function closeRec() { document.getElementById('rec-modal').classList.add('hidden'); if (!activeID) softFocus('admin-search-input', 50); }
+        function closeRec() { document.getElementById('rec-modal').classList.add('hidden'); closeScan(); if (!activeID) softFocus('admin-search-input', 50); }
         function closeRecSuccess() { document.getElementById('rec-success-modal').classList.add('hidden'); if (!activeID) softFocus('admin-search-input', 50); }
         function submitRec() {
             const input = document.getElementById('rec-input'), errEl = document.getElementById('rec-error');
@@ -1708,6 +1734,161 @@
                 <p class="mt-3 text-xs text-stone-500 dark:text-stone-400">Issued ${esc(r.issued)} by ${esc(r.issuer)} · ${r.cost} 🪙 paid</p>`;
             document.getElementById('rec-success-modal').classList.remove('hidden');
             setTimeout(() => document.getElementById('rec-ok').focus(), 120);   // after the Enter key has fully finished
+        }
+
+        // --- ReC SCAN: camera (or image upload) -> text goes into the box; Validate/Enter is still up to the user.
+        // Everything is decoded locally in the browser: camera frames and uploaded images are never sent anywhere. ---
+        const SCAN = { token: 0, fileTok: 0, stream: null, timer: null, detP: null, jsqrP: null, canvas: null };
+        const scanEl = id => document.getElementById(id);
+        const scanOpen = () => !scanEl('scan-modal').classList.contains('hidden');
+        function scanMsg(msg) {                                   // camera window if it is showing, otherwise the ReC error line
+            if (scanOpen()) scanEl('scan-status').textContent = msg; else scanEl('rec-error').textContent = msg;
+        }
+        function loadJsQR() {                                     // fallback decoder for browsers without BarcodeDetector, loaded only when needed
+            if (window.jsQR) return Promise.resolve(window.jsQR);
+            if (SCAN.jsqrP) return SCAN.jsqrP;
+            SCAN.jsqrP = new Promise((res, rej) => {
+                const el = document.createElement('script');
+                el.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+                el.onload = () => window.jsQR ? res(window.jsQR) : rej(new Error('The QR reader failed to load.'));
+                el.onerror = () => { el.remove(); rej(new Error('Could not load the QR reader. Check your internet connection.')); };
+                document.head.appendChild(el);
+            }).catch(e => { SCAN.jsqrP = null; throw e; });
+            return SCAN.jsqrP;
+        }
+        function scanDetector() {
+            if (!SCAN.detP) SCAN.detP = (async () => {
+                try {
+                    if ('BarcodeDetector' in window) {
+                        const f = await window.BarcodeDetector.getSupportedFormats();
+                        if (f.includes('qr_code')) return new window.BarcodeDetector({ formats: ['qr_code'] });
+                    }
+                } catch (e) {}
+                return null;
+            })();
+            return SCAN.detP;
+        }
+        async function decodeCanvas(canvas, live) {
+            const det = await scanDetector();
+            if (det) {
+                try { const r = await det.detect(canvas); if (r && r.length && r[0].rawValue) return r[0].rawValue; } catch (e) {}
+                if (live) return null;                            // live frames: native detector only (fast); photos also try jsQR below
+            }
+            let jq;
+            try { jq = await loadJsQR(); } catch (e) { if (det) return null; throw e; }
+            const d = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height);
+            const r = jq(d.data, d.width, d.height, { inversionAttempts: live ? 'dontInvert' : 'attemptBoth' });
+            return r && r.data ? r.data : null;
+        }
+        async function scanLiveDecode(v) {                        // live frames: native detector if present, else jsQR
+            const sc = Math.min(1, 800 / v.videoWidth), w = Math.max(1, Math.round(v.videoWidth * sc)), h = Math.max(1, Math.round(v.videoHeight * sc));
+            const c = SCAN.canvas || (SCAN.canvas = document.createElement('canvas'));
+            if (c.width !== w) c.width = w; if (c.height !== h) c.height = h;
+            c.getContext('2d', { willReadFrequently: true }).drawImage(v, 0, 0, w, h);
+            const det = await scanDetector();
+            if (det) { try { const r = await det.detect(c); if (r && r.length && r[0].rawValue) return r[0].rawValue; } catch (e) {} return null; }
+            return decodeCanvas(c, true);
+        }
+        async function scanTick(tok) {
+            if (tok !== SCAN.token) return;
+            const v = scanEl('scan-video');
+            try {
+                if (v.readyState >= 2 && v.videoWidth) {
+                    const text = await scanLiveDecode(v);
+                    if (tok !== SCAN.token) return;
+                    if (text && text.trim()) return scanDone(text);
+                }
+            } catch (e) { if (tok === SCAN.token) scanMsg((e && e.message ? e.message + ' ' : '') + 'You can upload an image instead.'); return; }
+            SCAN.timer = setTimeout(() => scanTick(tok), 150);
+        }
+        function scanDone(text) {
+            closeScan();
+            const input = scanEl('rec-input');
+            input.value = String(text).trim();
+            scanEl('rec-error').textContent = '';
+            if (!TOUCH) { input.focus(); }                        // NOT submitted: the user still presses Validate / Enter
+        }
+        async function startCamera(tok) {
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            } catch (e) {
+                if (tok !== SCAN.token) return;
+                const n = e && e.name;
+                if (n === 'NotAllowedError' || n === 'SecurityError') scanMsg('Camera access is blocked. Allow it in your browser, or upload an image of the QR code.');
+                else if (n === 'NotFoundError' || n === 'DevicesNotFoundError' || n === 'OverconstrainedError') { scanMsg('No camera found. Choose an image of the QR code instead.'); pickScanFile(); }
+                else scanMsg('Could not start the camera. Upload an image of the QR code instead.');
+                return;
+            }
+            if (tok !== SCAN.token) { stream.getTracks().forEach(t => t.stop()); return; }   // closed while the permission prompt was open
+            SCAN.stream = stream;
+            const v = scanEl('scan-video');
+            v.muted = true; v.setAttribute('playsinline', ''); v.srcObject = stream;
+            try { await v.play(); } catch (e) {}
+            if (tok !== SCAN.token) return;
+            scanMsg('Point the camera at the coupon QR code.');
+            scanTick(tok);
+        }
+        function startScan() {
+            if (scanOpen() || scanEl('rec-modal').classList.contains('hidden')) return;
+            const tok = ++SCAN.token;
+            scanEl('rec-input').blur();
+            scanEl('rec-error').textContent = '';
+            if (!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function')) { pickScanFile(); return; }   // no camera API: go straight to the files app
+            scanEl('scan-status').textContent = 'Starting camera…';
+            scanEl('scan-modal').classList.remove('hidden');
+            startCamera(tok);
+        }
+        function closeScan() {
+            SCAN.token++; SCAN.fileTok++; clearTimeout(SCAN.timer); SCAN.timer = null;
+            if (SCAN.stream) { SCAN.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); SCAN.stream = null; }
+            const v = scanEl('scan-video');
+            if (v) { try { v.pause(); } catch (e) {} v.srcObject = null; }
+            const m = scanEl('scan-modal'), was = !m.classList.contains('hidden');
+            m.classList.add('hidden');
+            if (was && !scanEl('rec-modal').classList.contains('hidden')) softFocus('rec-input', 30);
+        }
+        function pickScanFile() { try { scanEl('scan-file').click(); } catch (e) {} }
+        function scanLoadImage(file) {
+            return new Promise((res, rej) => {
+                const url = URL.createObjectURL(file), img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); res(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Could not read that image.')); };
+                img.src = url;
+            });
+        }
+        async function decodeImageFile(file) {
+            if (file.type && !/^image\//.test(file.type)) throw new Error('Please choose an image file.');
+            let src;
+            try { src = await createImageBitmap(file); } catch (e) { src = await scanLoadImage(file); }
+            const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, m = Math.max(W, H);
+            if (!W || !H) throw new Error('Could not read that image.');
+            const scales = [...new Set([Math.min(1, 1500 / m), Math.min(1, 1000 / m), Math.min(1, 600 / m), m < 500 ? 2 : 1])];
+            const c = document.createElement('canvas');
+            try {
+                for (const sc of scales) {
+                    c.width = Math.max(1, Math.round(W * sc)); c.height = Math.max(1, Math.round(H * sc));
+                    const ctx = c.getContext('2d', { willReadFrequently: true });
+                    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);   // transparent PNGs would otherwise turn black
+                    ctx.drawImage(src, 0, 0, c.width, c.height);
+                    const t = await decodeCanvas(c, false);
+                    if (t && t.trim()) return t;
+                }
+            } finally { if (src.close) src.close(); }
+            return null;
+        }
+        async function onScanFile(input) {
+            const file = input.files && input.files[0];
+            input.value = '';                                     // lets the same file be picked again
+            if (!file) return;
+            const ft = ++SCAN.fileTok;
+            if (scanOpen()) scanMsg('Reading image…'); else scanEl('rec-error').textContent = '';
+            try {
+                const text = await decodeImageFile(file);
+                if (ft !== SCAN.fileTok) return;                  // window closed meanwhile
+                if (!text) return scanMsg('No QR code found in that image. Try a sharper, well-lit picture.');
+                scanDone(text);
+            } catch (e) { if (ft === SCAN.fileTok) scanMsg((e && e.message) || 'Could not read that image.'); }
         }
 
         // --- THEME & INIT ---
