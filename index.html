@@ -706,17 +706,30 @@
         //    orgs/<ID>/students/<key> -> one document per student
         //    orgs/<ID>/ledger/<code>  -> one document per coupon code
         // =====================================================================
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyD-3ekvbtsZs2m3rIjyq-TSd9sDgNYZPu0",
-            authDomain: "uft-pointsystem.firebaseapp.com",
-            databaseURL: "https://uft-pointsystem-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "uft-pointsystem",
-            storageBucket: "uft-pointsystem.firebasestorage.app",
-            messagingSenderId: "608392136336",
-            appId: "1:608392136336:web:8af00865da03931fd7ba15"
-        };
+        // DATABASES. Each entry is one free Firebase project with its own free read/write quota. Organisations can live in any of them:
+        // at login the app finds the right one by itself (the one used last time on this device is tried first). To add a database,
+        // copy the last block and paste that project's web-app config into it. Entries still containing PASTE_ are skipped.
+        const FIREBASE_SHARDS = [
+            {
+                apiKey: "AIzaSyD-3ekvbtsZs2m3rIjyq-TSd9sDgNYZPu0",
+                authDomain: "uft-pointsystem.firebaseapp.com",
+                databaseURL: "https://uft-pointsystem-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "uft-pointsystem",
+                storageBucket: "uft-pointsystem.firebasestorage.app",
+                messagingSenderId: "608392136336",
+                appId: "1:608392136336:web:8af00865da03931fd7ba15"
+            },
+            {   // ---- database 2 (uft-pointsystemext1) ----
+                apiKey: "AIzaSyAG41Dfr7IdAj1wlAIskzAn_7gnySJkFUs",
+                authDomain: "uft-pointsystemext1.firebaseapp.com",
+                projectId: "uft-pointsystemext1",
+                storageBucket: "uft-pointsystemext1.firebasestorage.app",
+                messagingSenderId: "456440900252",
+                appId: "1:456440900252:web:77cc81a508960255af5b59"
+            }
+        ];
         const ORG_EMAIL_DOMAIN = 'uft.pointsystem-org.com';   // org logins are stored as <orgid>@this-domain (must match what you create in Firebase Authentication)
-        const ORG_ID_KEY = 'ps_orgId', ORG_PASS_KEY = 'ps_orgPass';   // localStorage keys used: saved org login
+        const ORG_ID_KEY = 'ps_orgId', ORG_PASS_KEY = 'ps_orgPass', SHARD_KEY = 'ps_orgShard';   // localStorage keys used: saved org login
         const THEME_KEY = 'ps_theme';                      // localStorage: this device's light/dark choice ('dark' or 'light')
         const MASTER_PASS_KEY = 'ps_masterPass';          // sessionStorage only: cleared the moment the tab/browser closes
         let orgMasterPasscode = '';                        // this organisation's Master Passcode, cached in memory for the session
@@ -724,6 +737,7 @@
 
         let students = [], admins = [], ledgerCache = {}, lastResetDate = 'Never';
         let syncedStudents = {}, syncedLedger = {};       // last known cloud copy (key -> JSON text)
+        let shards = [], shardIdx = 0;                    // one {auth, db} per configured database; auth/db below point at the active one
         let fbReady = false, auth = null, db = null, orgId = null, orgReady = false, pendingWrites = 0, unsubs = [];
 
         const parseJ = (s, fb) => { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } };
@@ -761,13 +775,19 @@
 
         function initFirebase() {
             try {
-                if (/PASTE_/.test(JSON.stringify(FIREBASE_CONFIG))) throw new Error('Cloudbase config not pasted yet.');
-                firebase.initializeApp(FIREBASE_CONFIG);
-                auth = firebase.auth(); db = firebase.firestore();
-                // Mobile networks/browsers often break Firestore's default streaming connection, which then sits and waits
-                // before falling back. This makes it detect that quickly and switch to long-polling instead.
-                try { db.settings({ experimentalAutoDetectLongPolling: true, useFetchStreams: false }); } catch (e) {}
-                auth.setPersistence(firebase.auth.Auth.Persistence.NONE);   // every launch asks for the passcode again
+                shards = [];
+                FIREBASE_SHARDS.forEach((cfg, i) => {
+                    if (/PASTE_/.test(JSON.stringify(cfg))) return;   // a database slot that is not filled in yet is skipped
+                    const app = firebase.initializeApp(cfg, i === 0 ? undefined : 'shard' + i);
+                    const a = app.auth(), d = app.firestore();
+                    // Mobile networks/browsers often break Firestore's default streaming connection, which then sits and waits
+                    // before falling back. This makes it detect that quickly and switch to long-polling instead.
+                    try { d.settings({ experimentalAutoDetectLongPolling: true, useFetchStreams: false }); } catch (e) {}
+                    a.setPersistence(firebase.auth.Auth.Persistence.NONE);   // every launch asks for the passcode again
+                    shards.push({ auth: a, db: d });
+                });
+                if (!shards.length) throw new Error('Cloudbase config not pasted yet.');
+                auth = shards[0].auth; db = shards[0].db;
                 fbReady = true;
             } catch (e) {
                 document.getElementById('org-error').textContent = (typeof firebase === 'undefined')
@@ -837,14 +857,27 @@
             btn.disabled = true; document.getElementById('org-login-btn-label').textContent = 'Checking…';
             try {
                 if (pendingWrites > 0) await Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 4000))]).catch(() => {});
-                await auth.signInWithEmailAndPassword(id.toLowerCase() + '@' + ORG_EMAIL_DOMAIN, pass);
+                // find which database holds this organisation (sign-in costs no reads); the one used last time is tried first
+                const order = shards.map((x, i) => i), last = parseInt(localStorage.getItem(SHARD_KEY), 10);
+                if (order.includes(last)) { order.splice(order.indexOf(last), 1); order.unshift(last); }
+                let signedIn = false, lastErr = null;
+                for (const i of order) {
+                    auth = shards[i].auth; db = shards[i].db;
+                    try { await auth.signInWithEmailAndPassword(id.toLowerCase() + '@' + ORG_EMAIL_DOMAIN, pass); shardIdx = i; signedIn = true; break; }
+                    catch (e) {
+                        lastErr = e;
+                        if (!/^auth\/(invalid-credential|invalid-login-credentials|user-not-found|wrong-password|invalid-email)$/.test((e && e.code) || '')) throw e;   // network etc.: stop; wrong login: try the next database
+                    }
+                }
+                if (!signedIn) throw lastErr;
                 orgId = id;
                 document.getElementById('org-login-btn-label').textContent = 'Loading data…';
-                let res;
-                try { res = await Promise.all([orgDoc().get(), orgDoc().collection('students').get(), orgDoc().collection('ledger').get()]); }
-                catch (e) { await auth.signOut(); orgId = null; throw { code: e && e.code === 'permission-denied' ? 'ps/inactive' : 'auth/network-request-failed' }; }
-                localStorage.setItem(ORG_PASS_KEY, pass);
-                startOrg(res[0].data() || {}, mapFromSnap(res[1]), mapFromSnap(res[2]));
+                // ONE load only: the first snapshot of each live listener IS the initial load (it used to be read twice: get() + listener)
+                let first;
+                try { first = await attachOrgListeners(); }
+                catch (e) { unsubs.forEach(u => { try { u(); } catch (_) {} }); unsubs = []; await auth.signOut(); orgId = null; throw { code: e && e.code === 'permission-denied' ? 'ps/inactive' : 'auth/network-request-failed' }; }
+                localStorage.setItem(ORG_PASS_KEY, pass); localStorage.setItem(SHARD_KEY, String(shardIdx));
+                startOrg(first.org.data() || {}, mapFromSnap(first.students), mapFromSnap(first.ledger));
             } catch (e) {
                 const c = (e && e.code) || '';
                 if (c !== 'auth/network-request-failed' && c !== 'auth/too-many-requests') localStorage.removeItem(ORG_PASS_KEY);   // a saved passcode that no longer works is forgotten
@@ -854,6 +887,24 @@
                     : 'Wrong Organisation ID or passcode.');
                 document.getElementById('org-pass-input').select();
             } finally { btn.disabled = false; document.getElementById('org-login-btn-label').textContent = 'Login'; }
+        }
+        // Opens the three live listeners. Resolves with their first (server) snapshots; afterwards each change on any device
+        // reaches this one as the changed documents only, so reads stay proportional to what actually changed.
+        function attachOrgListeners() {
+            return new Promise((resolve, reject) => {
+                const first = {}; let phase = 'loading';
+                const timer = setTimeout(() => fail({ code: 'unavailable' }), 20000);
+                const fail = e => { if (phase !== 'loading') return; phase = 'failed'; clearTimeout(timer); reject(e || {}); };
+                const wire = (name, ref, live) => ref.onSnapshot({ includeMetadataChanges: true }, snap => {
+                    if (phase === 'live') return live(snap);
+                    if (phase !== 'loading' || snap.metadata.fromCache) return;
+                    first[name] = snap;
+                    if (first.students && first.ledger && first.org) { phase = 'live'; clearTimeout(timer); resolve(first); }
+                }, fail);
+                unsubs = [wire('students', orgDoc().collection('students'), onStudentsRemote),
+                          wire('ledger', orgDoc().collection('ledger'), onLedgerRemote),
+                          wire('org', orgDoc(), onOrgRemote)];
+            });
         }
         function startOrg(v, sMap, lMap) {
             syncedStudents = sMap;
@@ -874,12 +925,6 @@
             document.getElementById('org-exit-btn').classList.remove('hidden');
             setSync('ok');
             applyTheme(); updateLastReset(); renderLeaderboard(); showPage('user-page');
-            const opt = { includeMetadataChanges: true }, noop = () => {};
-            unsubs = [
-                orgDoc().collection('students').onSnapshot(opt, onStudentsRemote, noop),
-                orgDoc().collection('ledger').onSnapshot(opt, onLedgerRemote, noop),
-                orgDoc().onSnapshot(opt, onOrgRemote, noop)
-            ];
             Coupons.sweep();
         }
         function orgLogout() {
@@ -892,7 +937,8 @@
             closeScan();
             ['profile-modal', 'redeem-modal', 'rec-modal', 'rec-success-modal', 'qr-modal', 'scan-modal'].forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); });
             performAdminLogout();
-            if (auth) Promise.race([db.waitForPendingWrites(), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(() => { if (!orgReady) auth.signOut(); });   // let unsent saves finish first
+            const exitAuth = auth, exitDb = db;
+            if (exitAuth) Promise.race([exitDb.waitForPendingWrites(), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(() => { if (!orgReady || auth !== exitAuth) exitAuth.signOut(); });   // let unsent saves finish first
             renderLeaderboard(); updateLastReset();
             document.querySelectorAll('#user-page, #admin-page, #admin-register-page, #admin-create-page, #admin-login-page, #admin-profiles-page').forEach(p => p.classList.add('hidden'));
             document.getElementById('nav-right').classList.add('hidden');
