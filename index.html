@@ -1688,15 +1688,15 @@
                 <div id="redeem-code" class="break-all select-all font-mono text-lg font-black bg-stone-100 dark:bg-stone-800 text-maroon dark:text-amber-400 p-4 rounded-2xl border-2 border-amber-300 dark:border-stone-600">${esc(r.code)}</div>
                 <ul class="mt-3 text-sm font-bold text-left list-disc pl-6">${r.perks.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
                 <p class="mt-3 text-xs text-stone-500 dark:text-stone-400">Valid until ${esc(r.info.expires)}. After that the code is wiped and unused points are refunded.</p>
-                <p class="mt-3 text-sm text-stone-500 dark:text-stone-400">Code is copied to Clipboard!, Click the button below to copy again.</p>
+                <p id="redeem-copy-msg" class="mt-3 text-sm text-stone-500 dark:text-stone-400">Tap Copy to copy the code.</p>
 				<p id="redeem-qr-msg" class="mt-2 min-h-[1rem] text-xs font-bold text-red-600 dark:text-red-400"></p>
 				<div class="mt-4 flex gap-3">
                     <button onclick="copyRedeemCode()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">Copy</button>
                     <button onclick="showCouponQR()" class="flex-1 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-xs border-b-4 border-blue-900">QR code</button>
                     <button id="redeem-done" onclick="closeRedeem()" class="flex-1 ${BTN_GHOST}">Done</button>
                 </div></div>`;
-            rdReady(); document.getElementById('redeem-done').focus(); 
-			navigator.clipboard && navigator.clipboard.writeText(document.getElementById('redeem-code').textContent);
+            rdReady(); document.getElementById('redeem-done').focus();
+            copyRedeemCode();   // tries to copy straight away; the message under the code says whether it worked
         }
         // Printable PNG: QR code on white, a short caption (student, benefit, expiry) and the code as text underneath
         function buildQRCanvas(r) {
@@ -1766,7 +1766,38 @@
             if (d && !document.getElementById('redeem-modal').classList.contains('hidden')) d.focus();
         }
 
-        function copyRedeemCode() { navigator.clipboard && navigator.clipboard.writeText(document.getElementById('redeem-code').textContent); alert("Copied to Clipboard!")}
+        // Copy that also works on iPhone/iPad Safari: the old-style copy runs first and synchronously (iOS only allows copying
+        // inside the tap/keypress itself), then the modern clipboard API is tried, and if both are refused the code is
+        // highlighted so it can be copied by hand. The result is shown on screen instead of a blocking alert().
+        function copyText(text) {
+            let ok = false; const prev = document.activeElement;
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.setAttribute('readonly', ''); ta.setAttribute('aria-hidden', 'true');
+                ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px';
+                document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+                ok = document.execCommand('copy'); ta.remove();
+            } catch (e) { ok = false; }
+            try { if (prev && prev.focus) prev.focus(); } catch (e) {}
+            if (ok) return Promise.resolve(true);
+            if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, () => false);
+            return Promise.resolve(false);
+        }
+        function selectRedeemCode() {
+            const el = document.getElementById('redeem-code'); if (!el) return;
+            const r = document.createRange(); r.selectNodeContents(el);
+            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        }
+        function copyRedeemCode() {
+            const el = document.getElementById('redeem-code'); if (!el) return;
+            copyText(el.textContent).then(ok => {
+                if (!ok) selectRedeemCode();
+                const m = document.getElementById('redeem-copy-msg'); if (!m) return;
+                m.textContent = ok ? 'Code copied to clipboard. Tap Copy to copy it again.'
+                                   : 'Could not copy automatically. The code is highlighted: press and hold it, then tap Copy.';
+                m.className = 'mt-3 text-sm font-bold ' + (ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400');
+            });
+        }
 
         function openRec() {
             if (guestBlocked('use the Redemption Checker')) return;
