@@ -1801,6 +1801,7 @@
 
         function openRec() {
             if (guestBlocked('use the Redemption Checker')) return;
+			document.getElementById('rec-input').value = "";
             document.getElementById('rec-error').textContent = '';
             document.getElementById('rec-modal').classList.remove('hidden');
             setTimeout(() => document.getElementById('rec-input').focus(), 50);
