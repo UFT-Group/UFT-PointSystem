@@ -617,6 +617,9 @@
         const multi = 10;
         const CONFIG = { 
             STARTING_POINTS: 10, 
+            RESET_STEP: 1 * multi,        // the "10 points" used by the monthly-reset rules below (scales with multi)
+            RESET_BRONZE_GAP: 2 * multi,  // highest Bronze score after a reset = Silver threshold - this
+            RESET_GOLD_DROP: 20 * multi,  // Gold restarts at Gold threshold - this
             TIERS: { 
                 PLATINUM: 135 * multi, 
                 GOLD: 91 * multi, 
@@ -2462,12 +2465,28 @@
             return hist.map((h, i) => { if (ns[i] !== undefined) cur = ns[i]; return cur; });
         }
 
+        // Score a student starts the new month with, by the tier they finished in. Every number comes from CONFIG,
+        // so it follows the tier thresholds automatically if `multi` (or a threshold) is changed.
+        //   Negative / Neutral : RESET_STEP - |points|             (0 gives RESET_STEP)
+        //   Bronze             : at least RESET_STEP, at most Silver threshold - RESET_BRONZE_GAP (470); otherwise unchanged
+        //   Silver             : Silver threshold - RESET_STEP      (480)
+        //   Gold               : Gold threshold - RESET_GOLD_DROP   (710)
+        //   Platinum           : Gold threshold + RESET_STEP        (920)
+        function monthlyResetTarget(points) {
+            const T = CONFIG.TIERS, step = CONFIG.RESET_STEP;
+            if (points >= T.PLATINUM) return T.GOLD + step;
+            if (points >= T.GOLD) return T.GOLD - CONFIG.RESET_GOLD_DROP;
+            if (points >= T.SILVER) return T.SILVER - step;
+            if (points > 0) return Math.min(Math.max(points, step), T.SILVER - CONFIG.RESET_BRONZE_GAP);
+            return step - Math.abs(points);
+        }
+
         function monthlyReset() {
             if (guestBlocked('trigger a Monthly Reset')) return;
 		    if(!confirm("Reset month?")) return;
 
 		    students.forEach(s => {
-		        const newPts = (s.points > 0) ? CONFIG.STARTING_POINTS : (CONFIG.STARTING_POINTS - Math.abs(s.points));
+		        const newPts = monthlyResetTarget(s.points);
 				const diff = newPts - s.points;
 		        const eps = historyEpochs(s.history || []);
 		        const nextPeriod = (eps.length ? eps[eps.length - 1] : 0) + 1;
