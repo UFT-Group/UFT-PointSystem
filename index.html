@@ -522,8 +522,8 @@
                 <div class="flex items-center gap-2 min-w-0">
                     <h3 id="settings-title" class="text-xl sm:text-2xl font-black text-white tracking-tighter truncate">Settings</h3>
                 </div>
-                <button type="button" onclick="closeSettings()" aria-label="Close settings" class="w-10 h-10 shrink-0 rounded-full bg-black/30 hover:bg-black/50 text-white text-lg font-black border border-red-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">✕</button>
-            </div>
+				<button type="button" onclick="closeSettings()" aria-label="Close settings" style="--kh-bg:#1c1917;--kh-fg:#fff;" class="btn-key w-10 h-10 shrink-0 rounded-full bg-black/30 hover:bg-black/50 text-white text-lg font-black border border-red-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">✕<span class="keyhint">Esc</span></button>
+			</div>
             <div id="settings-body" class="p-4 sm:p-5 overflow-y-auto overscroll-contain"></div>
         </div>
     </div>
@@ -2096,7 +2096,7 @@
                     : '<button type="button" onclick="settingsPdfMissing()" class="' + row + '">' + inner + '</button>';
             };
             const manualRow = isRegisteredAdmin()
-                ? pdfRow('manual', 'Operating Manual', '<span class="w-8 h-8 shrink-0 rounded-full bg-maroon text-amber-300 flex items-center justify-center text-base font-black">?</span>') : '';
+                ? pdfRow('manual', 'Help and FAQ Manual', '<span class="w-8 h-8 shrink-0 rounded-full bg-maroon text-amber-300 flex items-center justify-center text-base font-black">?</span>') : '';
             body.innerHTML =
                 '<p class="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Appearance</p>'
               + '<div class="grid grid-cols-3 gap-2" role="group" aria-label="Theme">' + themeBtns + '</div>'
