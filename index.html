@@ -213,7 +213,7 @@
 			</div>
             <!-- ##### SETTINGS ICON: upload your settings .svg to GitHub and put its path in the src below.
                  The gear emoji shows until the image loads. The "invert" class turns a dark svg white; delete it if your svg is already light. -->
-            <button type="button" onclick="openSettings()" aria-label="Settings" title="Settings" class="w-11 h-11 shrink-0 rounded-full hover:bg-red-800 transition flex items-center justify-center bg-black/30 border border-red-900 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+            <button type="button" id="settings-btn" onclick="openSettings()" aria-label="Settings" title="Settings" class="w-11 h-11 shrink-0 rounded-full hover:bg-red-800 transition flex items-center justify-center bg-black/30 border border-red-900 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
                 <img src="settingsicon.svg" alt="" class="w-6 h-6 invert" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
                 <span style="display:none" class="text-amber-100 text-xl leading-none">⚙️</span>
             </button>
@@ -2052,7 +2052,14 @@
             manual:  'PointSystem_v453_LatestManual_compress.pdf'      // the "?" Operating Manual button: registered admins only
         };
         const THEME_OPTS = [['light', '☀️', 'Light'], ['dark', '🌙', 'Dark'], ['system', '🖥️', 'System']];
-        const SET = { opener: null };
+        const SET = { opener: null, prevField: null };
+        // Remember the field you were in just before the gear was pressed, so Esc can put the cursor back exactly there.
+        (function () {
+            const isField = el => !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !el.closest('#settings-modal');
+            const onGear = el => !!(el && el.closest && el.closest('#settings-btn'));
+            document.addEventListener('pointerdown', e => { if (onGear(e.target)) SET.prevField = isField(document.activeElement) ? document.activeElement : null; }, true);
+            document.addEventListener('focusout', e => { if (onGear(e.relatedTarget)) SET.prevField = isField(e.target) ? e.target : null; }, true);
+        })();
         const settingsEl = () => document.getElementById('settings-modal');
         const settingsOpen = () => !settingsEl().classList.contains('hidden');
         const isRegisteredAdmin = () => !!loggedInAdmin && !!loggedInAdminProfile && !isGuestSession;   // guests do not get the manual
@@ -2064,28 +2071,24 @@
             renderSettings();
             const sel = document.querySelector('#settings-body [aria-pressed="true"]'); if (sel) sel.focus({ preventScroll: true });
         }
-        function closeSettings() {
+        function closeSettings(viaEscape) {
             settingsEl().classList.add('hidden');
             document.documentElement.classList.remove('overflow-hidden');
-            // like the other Esc-closed windows: let go of the gear button and put the cursor back in the page's own search/input box
-            try {
-                const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur();
-                if (SET.opener && SET.opener.blur) SET.opener.blur();
-            } catch (e) {}
-            SET.opener = null;
-            settingsRestoreFocus();
+            const opener = SET.opener, prev = SET.prevField;
+            SET.opener = null; SET.prevField = null;
+            if (viaEscape) {
+                // Esc / Android Back: back to the exact field you were in (if it is still on screen). The gear button never keeps focus.
+                try {
+                    const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur();
+                    if (opener && opener.blur) opener.blur();
+                    if (!TOUCH && prev && document.contains(prev) && prev.getClientRects().length) prev.focus({ preventScroll: true });
+                } catch (e) {}
+                return;
+            }
+            // every other way of closing (the X, tapping outside) is unchanged: focus goes back to what opened it
+            try { if (opener && opener.focus && document.contains(opener)) opener.focus({ preventScroll: true }); } catch (e) {}
         }
-        function settingsRestoreFocus() {
-            const shown = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
-            if (shown('org-gate')) { const i = document.getElementById('org-id-input'); return softFocus(i && i.value ? 'org-pass-input' : 'org-id-input', 50); }
-            if (shown('user-page')) return softFocus('frontend-search', 50);
-            if (shown('admin-page')) return activeID ? undefined : softFocus('admin-search-input', 50);   // a student's profile is open: leave focus alone (same rule as closeRec)
-            if (shown('admin-login-page')) return softFocus('admin-login-search-input', 50);
-            if (shown('admin-profiles-page')) return softFocus('admin-profiles-search', 50);
-            if (shown('admin-create-page')) return softFocus('new-admin-fname', 50);
-            if (shown('admin-register-page')) return softFocus('reg-id', 50);
-        }
-        function settingsBack() { closeSettings(); }          // Escape / Android Back
+        function settingsBack() { closeSettings(true); }          // Escape / Android Back
         function settingsPickTheme(m) {
             setThemeMode(m); renderSettings();
             const b = document.querySelector('#settings-body [data-mode="' + m + '"]'); if (b) b.focus({ preventScroll: true });
