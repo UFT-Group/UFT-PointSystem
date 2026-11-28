@@ -7,10 +7,19 @@
     <title>PointSystem v4.5.3</title>
 	<link rel="icon" type="image/png" href="UFTLOGO.png">
     <script>
-        // Apply this device's saved light/dark choice immediately, before the page is drawn.
+        // Apply the theme immediately, before the page is drawn: the saved choice ('light' / 'dark'), otherwise the device's
+        // light/dark setting, and dark if the device gives no preference.
         (function () {
+            var dark = true;
             try {
-                if (localStorage.getItem('ps_theme') === 'dark') {
+                var m = null; try { m = localStorage.getItem('ps_theme'); } catch (e) {}
+                if (m === 'dark') dark = true;
+                else if (m === 'light') dark = false;
+                else if (window.matchMedia) {
+                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) dark = true;
+                    else if (window.matchMedia('(prefers-color-scheme: light)').matches) dark = false;
+                }
+                if (dark) {
                     document.documentElement.classList.add('dark');
                     var s = document.createElement('style');
                     s.textContent = 'html.dark body{background-color:#1c1917 !important}html.dark{background-color:#1c1917}';
@@ -202,9 +211,11 @@
     			<h1 class="text-2xl font-black tracking-tighter text-amber-400 drop-shadow-md">PointSystem <span class="text-white text-sm font-normal uppercase tracking-widest ml-1">v4.5.3</span></h1>
     			<span class="text-[10px] text-orange-200 tracking-widest uppercase">by Himanshu Agrawal, SG-UFT Group</span>
 			</div>
-            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-red-800 transition flex items-center justify-center bg-black/30 border border-red-900 shadow-inner">
-                <span id="theme-icon-sun" class="hidden text-amber-300 text-lg">☀️</span>
-                <span id="theme-icon-moon" class="text-amber-100 text-lg">🌙</span>
+            <!-- ##### SETTINGS ICON: upload your settings .svg to GitHub and put its path in the src below.
+                 The gear emoji shows until the image loads. The "invert" class turns a dark svg white; delete it if your svg is already light. -->
+            <button type="button" onclick="openSettings()" aria-label="Settings" title="Settings" class="w-11 h-11 shrink-0 rounded-full hover:bg-red-800 transition flex items-center justify-center bg-black/30 border border-red-900 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+                <img src="settingsicon.svg" alt="" class="w-6 h-6 invert" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                <span style="display:none" class="text-amber-100 text-xl leading-none">⚙️</span>
             </button>
         </div>
         
@@ -503,6 +514,19 @@
         </div>
     </div>
 
+
+    <!-- ===== SETTINGS (opened from the gear button in the header; works on every page) ===== -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this)closeSettings()">
+        <div class="bg-orange-50 dark:bg-stone-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-4 border-amber-500 flex flex-col" style="max-height:90vh;max-height:90dvh" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div class="bg-maroon px-4 sm:px-5 py-3 flex items-center justify-between gap-3 border-b-4 border-amber-600 shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    <h3 id="settings-title" class="text-xl sm:text-2xl font-black text-white tracking-tighter truncate">Settings</h3>
+                </div>
+                <button type="button" onclick="closeSettings()" aria-label="Close settings" class="w-10 h-10 shrink-0 rounded-full bg-black/30 hover:bg-black/50 text-white text-lg font-black border border-red-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">✕</button>
+            </div>
+            <div id="settings-body" class="p-4 sm:p-5 overflow-y-auto overscroll-contain"></div>
+        </div>
+    </div>
 
     <div id="redeem-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-orange-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-500 flex flex-col max-h-[85vh]">
@@ -1569,6 +1593,7 @@
         function rdReady() { RD.nav = -1; rdHighlight(-1); rdBody().focus({ preventScroll: true }); }
         document.addEventListener('keydown', e => {
             const recOK = document.getElementById('rec-success-modal'), rec = document.getElementById('rec-modal'), red = document.getElementById('redeem-modal');
+            if (settingsOpen()) { if (e.key === 'Escape') { e.preventDefault(); settingsBack(); } return; }   // settings on top: Esc / Android Back steps back, then closes
             if (!document.getElementById('scan-modal').classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeScan(); } return; }   // scanner on top: only it reacts
             if (!document.getElementById('qr-modal').classList.contains('hidden')) { if (e.key === 'Escape') { e.preventDefault(); closeQR(); } return; }   // QR window on top: only it reacts
             if (!recOK.classList.contains('hidden')) {                       // success popup: Enter / Space / Esc = OK
@@ -1983,27 +2008,102 @@
         }
 
         // --- THEME & INIT ---
-        let isDarkMode = (function () { try { return localStorage.getItem(THEME_KEY) === 'dark'; } catch (e) { return false; } })();
+        // Theme mode is 'light', 'dark' or 'system' (follows the device). Default: system. isDarkMode is the resolved result used by the rest of the app.
+        let themeMode = (function () { try { const m = localStorage.getItem(THEME_KEY); return (m === 'light' || m === 'dark') ? m : 'system'; } catch (e) { return 'system'; } })();
+        const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        const lightQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+        // the device's setting; if the device gives no preference (or the browser can't tell us), dark
+        const deviceDark = () => (darkQuery && darkQuery.matches) ? true : (lightQuery && lightQuery.matches) ? false : true;
+        const resolveDark = () => themeMode === 'dark' || (themeMode === 'system' && deviceDark());
+        let isDarkMode = resolveDark();
         function applyTheme() {
             const body = document.getElementById('main-body');
-            const sun = document.getElementById('theme-icon-sun');
-            const moon = document.getElementById('theme-icon-moon');
+            isDarkMode = resolveDark();
             document.documentElement.classList.toggle('dark', isDarkMode);
             if (isDarkMode) {
                 body.classList.add('dark');
-                body.style.backgroundColor = "#1c1917"; 
-                sun.classList.remove('hidden'); moon.classList.add('hidden');
+                body.style.backgroundColor = "#1c1917";
             } else {
                 body.classList.remove('dark');
-                body.style.backgroundColor = "#fff7ed"; 
-                sun.classList.add('hidden'); moon.classList.remove('hidden');
+                body.style.backgroundColor = "#fff7ed";
             }
             if(chartInstance) updateChartTheme();
         }
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            try { localStorage.setItem(THEME_KEY, isDarkMode ? 'dark' : 'light'); } catch (e) {}
+        function setThemeMode(m) {
+            themeMode = (m === 'light' || m === 'dark') ? m : 'system';
+            try { localStorage.setItem(THEME_KEY, themeMode); } catch (e) {}
             applyTheme();
+        }
+        // in System mode, follow the device live when its light/dark setting changes
+        (function () {
+            const onSystemTheme = () => { if (themeMode === 'system') { applyTheme(); refreshSettings(); } };
+            [darkQuery, lightQuery].forEach(q => {
+                if (!q) return;
+                if (q.addEventListener) q.addEventListener('change', onSystemTheme);
+                else if (q.addListener) q.addListener(onSystemTheme);
+            });
+        })();
+
+        // ===== SETTINGS WINDOW =====
+        // ##### PDF PATHS: upload your three PDFs to GitHub and put each file's path or URL here. Each one opens in a new tab.
+        const SETTINGS_PDFS = {
+            terms:   'uftgrouptermsandconditions.pdf',
+            privacy: 'uftgroupprivacypolicy.pdf',
+            manual:  'PointSystem_v453_LatestManual_compress.pdf'      // the "?" Operating Manual button: registered admins only
+        };
+        const THEME_OPTS = [['light', '☀️', 'Light'], ['dark', '🌙', 'Dark'], ['system', '🖥️', 'System']];
+        const SET = { opener: null };
+        const settingsEl = () => document.getElementById('settings-modal');
+        const settingsOpen = () => !settingsEl().classList.contains('hidden');
+        const isRegisteredAdmin = () => !!loggedInAdmin && !!loggedInAdminProfile && !isGuestSession;   // guests do not get the manual
+        const pdfReady = k => !!SETTINGS_PDFS[k] && SETTINGS_PDFS[k].indexOf('#####') !== 0;
+        function openSettings() {
+            SET.opener = document.activeElement;
+            settingsEl().classList.remove('hidden');
+            document.documentElement.classList.add('overflow-hidden');
+            renderSettings();
+            const sel = document.querySelector('#settings-body [aria-pressed="true"]'); if (sel) sel.focus({ preventScroll: true });
+        }
+        function closeSettings() {
+            settingsEl().classList.add('hidden');
+            document.documentElement.classList.remove('overflow-hidden');
+            try { if (SET.opener && SET.opener.focus && document.contains(SET.opener)) SET.opener.focus({ preventScroll: true }); } catch (e) {}
+            SET.opener = null;
+        }
+        function settingsBack() { closeSettings(); }          // Escape / Android Back
+        function settingsPickTheme(m) {
+            setThemeMode(m); renderSettings();
+            const b = document.querySelector('#settings-body [data-mode="' + m + '"]'); if (b) b.focus({ preventScroll: true });
+        }
+        function settingsPdfMissing() { const n = document.getElementById('settings-pdf-note'); if (n) n.textContent = 'This document has not been added yet.'; }
+        function refreshSettings() { if (settingsOpen()) renderSettings(); }   // e.g. an admin signs out: the manual button goes away
+        function renderSettings() {
+            const body = document.getElementById('settings-body');
+            const row = 'w-full flex items-center gap-3 px-4 py-3 min-h-[3rem] rounded-xl bg-white dark:bg-stone-800 border-2 border-stone-300 dark:border-stone-700 hover:border-amber-500 text-left font-black uppercase tracking-widest text-xs text-stone-800 dark:text-stone-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400';
+            const themeBtns = THEME_OPTS.map(([m, icon, label]) => {
+                const on = themeMode === m;
+                const cls = on ? 'bg-maroon text-white border-amber-500 shadow-inner'
+                               : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:border-amber-500';
+                return '<button type="button" data-mode="' + m + '" aria-pressed="' + on + '" onclick="settingsPickTheme(\'' + m + '\')" class="flex flex-col items-center justify-center gap-1 min-h-[4.25rem] px-1 py-3 rounded-xl border-2 font-black uppercase tracking-wider text-[11px] sm:text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ' + cls + '">'
+                     + '<span class="text-2xl leading-none">' + icon + '</span><span>' + label + '</span></button>';
+            }).join('');
+            const note = themeMode === 'system' ? 'Following your device: currently ' + (isDarkMode ? 'dark' : 'light') + '.' : '&nbsp;';
+            // each document is a PDF that opens in a new tab, so nothing here touches the sign-in or the open session
+            const pdfRow = (key, label, lead) => {
+                const inner = lead + '<span class="flex-1">' + label + '</span><span class="text-lg" aria-hidden="true">↗</span>';
+                return pdfReady(key)
+                    ? '<a href="' + SETTINGS_PDFS[key] + '" target="_blank" rel="noopener noreferrer" class="' + row + '">' + inner + '</a>'
+                    : '<button type="button" onclick="settingsPdfMissing()" class="' + row + '">' + inner + '</button>';
+            };
+            const manualRow = isRegisteredAdmin()
+                ? pdfRow('manual', 'Operating Manual', '<span class="w-8 h-8 shrink-0 rounded-full bg-maroon text-amber-300 flex items-center justify-center text-base font-black">?</span>') : '';
+            body.innerHTML =
+                '<p class="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">Appearance</p>'
+              + '<div class="grid grid-cols-3 gap-2" role="group" aria-label="Theme">' + themeBtns + '</div>'
+              + '<p class="mt-2 text-xs text-stone-500 dark:text-stone-400 min-h-[1rem]">' + note + '</p>'
+              + '<div class="mt-5 flex flex-col gap-3">'
+              + pdfRow('terms', 'Terms &amp; Conditions', '') + pdfRow('privacy', 'Privacy Policy', '') + manualRow + '</div>'
+              + '<p id="settings-pdf-note" class="mt-3 text-xs font-bold text-red-600 dark:text-red-400 min-h-[1rem]"></p>';
         }
 
         function updateLastReset() {
@@ -3047,6 +3147,7 @@
             loggedInAdmin = "";
             loggedInAdminProfile = null; isGuestSession = false;
             closeRedeem(); closeRec(); closeRecSuccess();
+            refreshSettings();
             activeID = null;
             activeAdminIdx = -1;
             
