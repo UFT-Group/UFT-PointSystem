@@ -2067,8 +2067,23 @@
         function closeSettings() {
             settingsEl().classList.add('hidden');
             document.documentElement.classList.remove('overflow-hidden');
-            try { if (SET.opener && SET.opener.focus && document.contains(SET.opener)) SET.opener.focus({ preventScroll: true }); } catch (e) {}
+            // like the other Esc-closed windows: let go of the gear button and put the cursor back in the page's own search/input box
+            try {
+                const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur();
+                if (SET.opener && SET.opener.blur) SET.opener.blur();
+            } catch (e) {}
             SET.opener = null;
+            settingsRestoreFocus();
+        }
+        function settingsRestoreFocus() {
+            const shown = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
+            if (shown('org-gate')) { const i = document.getElementById('org-id-input'); return softFocus(i && i.value ? 'org-pass-input' : 'org-id-input', 50); }
+            if (shown('user-page')) return softFocus('frontend-search', 50);
+            if (shown('admin-page')) return activeID ? undefined : softFocus('admin-search-input', 50);   // a student's profile is open: leave focus alone (same rule as closeRec)
+            if (shown('admin-login-page')) return softFocus('admin-login-search-input', 50);
+            if (shown('admin-profiles-page')) return softFocus('admin-profiles-search', 50);
+            if (shown('admin-create-page')) return softFocus('new-admin-fname', 50);
+            if (shown('admin-register-page')) return softFocus('reg-id', 50);
         }
         function settingsBack() { closeSettings(); }          // Escape / Android Back
         function settingsPickTheme(m) {
